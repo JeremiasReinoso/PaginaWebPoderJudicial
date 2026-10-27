@@ -1,0 +1,32 @@
+.site-footer {
+  border-top: 1px solid var(--line);
+  padding: 36px 0;
+}
+.footer-top,
+.footer-bottom {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  align-items: center;
+}
+.footer-top p {
+  max-width: 400px;
+  font-size: 12px;
+}
+.footer-bottom {
+  margin-top: 30px;
+  padding-top: 20px;
+  border-top: 1px solid var(--line);
+  font-size: 11px;
+  color: var(--muted);
+}
+.footer-bottom a {
+  text-underline-offset: 3px;
+}
+@media (max-width: 600px) {
+  .footer-top,
+  .footer-bottom {
+    align-items: start;
+    flex-direction: column;
+  }
+}

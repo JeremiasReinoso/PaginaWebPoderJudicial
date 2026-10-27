@@ -1,0 +1,13 @@
+:root {
+  --paper: #f7f9fc;
+  --white: #fff;
+  --ink: #101828;
+  --muted: #667085;
+  --primary: #155eef;
+  --highlight: #dbe8ff;
+  --line: #dce2ec;
+  --serif: Georgia, 'Times New Roman', serif;
+  --sans: 'Segoe UI', Arial, sans-serif;
+  --radius: 16px;
+  --max: 1240px;
+}

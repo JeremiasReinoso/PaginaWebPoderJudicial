@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="es-AR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Campus de prueba | Método Judicial</title>
+    <link rel="stylesheet" href="/css/main.css" />
+    <link rel="stylesheet" href="/campus/styles.css" />
+    <script type="module" src="/campus/app.js"></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#campus-content">Saltar al contenido</a>
+    <header class="site-header">
+      <div class="header-inner">
+        <a class="brand" href="/"
+          ><span class="brand-mark" aria-hidden="true">m.</span
+          ><span
+            ><strong>método judicial</strong
+            ><small>Campus de prueba local</small></span
+          ></a
+        >
+        <div class="account">
+          <span id="account-name"></span
+          ><button id="logout" class="button secondary">Cerrar sesión</button>
+        </div>
+      </div>
+    </header>
+    <main id="campus-content" class="container section">
+      <span class="eyebrow">Tu espacio de estudio y práctica</span>
+      <h1>Probá tu próximo paso.</h1>
+      <p class="section-intro">
+        La Biblioteca reúne los cinco PDF y sus materiales de estudio, más un
+        repaso general. Las evaluaciones son de demostración: 4 preguntas por
+        módulo y 20 en el integrador; el banco completo de 20/50 sigue en
+        preparación. Preparación independiente, sin valor oficial.
+      </p>
+      <div class="notice" id="session-status" role="status">
+        Verificando tu sesión…
+      </div>
+      <nav class="campus-tabs" aria-label="Herramientas de prueba">
+        <button data-section="study" aria-pressed="true">
+          Exámenes y logros</button
+        ><button data-section="library" aria-pressed="false">Biblioteca</button
+        ><button data-section="reading" aria-pressed="false">
+          Comprensión lectora</button
+        ><button data-section="typing" aria-pressed="false">Mecanografía</button
+        ><button data-section="history" aria-pressed="false">
+          Mis resultados
+        </button>
+      </nav>
+      <div class="campus-columns">
+        <div>
+          <section id="study" class="tool-section">
+            <div class="tool-heading">
+              <span class="eyebrow">Recorrido de demostración</span>
+              <h2>Un módulo a la vez.</h2>
+              <p>
+                En esta prueba, un logro se obtiene con al menos 3 respuestas
+                correctas de 4. Podés repetir y probar el integrador libremente.
+              </p>
+            </div>
+            <div
+              id="achievements"
+              class="achievements"
+              aria-label="Logros por módulo"
+            ></div>
+            <div id="module-tests" class="test-grid"></div>
+            <article class="tool-card final-test">
+              <span class="eyebrow">Práctica integradora</span>
+              <h3>Los cinco módulos, juntos.</h3>
+              <p>
+                20 preguntas de demostración. No es el examen final de 50
+                preguntas del curso.
+              </p>
+              <button class="button" data-exam="final">
+                Probar integrador
+              </button>
+            </article>
+          </section>
+          <section id="library" class="tool-section" hidden>
+            <div class="tool-heading">
+              <span class="eyebrow">Tu biblioteca privada</span>
+              <h2>Cinco módulos. Una mirada integral.</h2>
+              <p>
+                Entrá a cada módulo para consultar el PDF original, el resumen,
+                el mapa conceptual, el cuadro comparativo y el esquema de
+                repaso.
+              </p>
+            </div>
+            <p id="library-status" role="status"></p>
+            <div id="library-grid" class="library-grid"></div>
+            <p id="library-note" class="library-source-note"></p>
+          </section>
+          <section id="library-reader" class="tool-section" hidden>
+            <button id="library-back" class="button secondary">
+              Volver a Biblioteca
+            </button>
+            <div class="tool-heading">
+              <span id="library-label" class="eyebrow"></span>
+              <h2 id="library-title" tabindex="-1"></h2>
+              <p id="library-intro"></p>
+            </div>
+            <div id="library-editorial" class="library-editorial"></div>
+            <div id="library-books" class="library-books"></div>
+            <nav
+              id="library-resources"
+              class="campus-tabs"
+              aria-label="Materiales del módulo"
+            >
+              <button data-resource="summary" aria-pressed="true">
+                Resumen</button
+              ><button data-resource="map" aria-pressed="false">
+                Mapa conceptual</button
+              ><button data-resource="comparison" aria-pressed="false">
+                Cuadro comparativo</button
+              ><button data-resource="outline" aria-pressed="false">
+                Esquema de repaso
+              </button>
+            </nav>
+            <div id="library-content" class="library-content"></div>
+            <p id="library-reader-note" class="library-source-note"></p>
+          </section>
+          <section id="reading" class="tool-section" hidden>
+            <div class="tool-heading">
+              <span class="eyebrow">Comprensión lectora</span>
+              <h2>Leé, interpretá y respondé.</h2>
+              <p>
+                Lecturas extensas elegidas al azar, con cuatro preguntas propias
+                de cada texto y corrección en el servidor.
+              </p>
+            </div>
+            <article class="tool-card">
+              <h3>Una lectura distinta en cada práctica</h3>
+              <p>
+                El banco reúne cinco textos originales sobre los temas del
+                curso. No se repiten hasta recorrerlos todos. La puntuación de
+                aprobación de esta demostración es 75 %.
+              </p>
+              <button class="button" data-exam="reading">
+                Elegir lectura aleatoria
+              </button>
+            </article>
+          </section>
+          <section id="typing" class="tool-section" hidden>
+            <div class="tool-heading">
+              <span class="eyebrow">Mecanografía</span>
+              <h2>Precisión antes que velocidad.</h2>
+              <p>
+                Cada inicio elige un texto largo al azar. No se repiten hasta
+                recorrer el banco. El tiempo empieza al iniciar; se incluyen
+                espacios, mayúsculas, tildes y signos.
+              </p>
+            </div>
+            <article class="tool-card">
+              <h3 id="typing-title">Texto aleatorio de práctica</h3>
+              <p id="typing-meta" class="small" role="status"></p>
+              <p
+                id="typing-source"
+                class="practice-passage"
+                tabindex="0"
+                aria-label="Texto para transcribir"
+              ></p>
+              <div class="metrics">
+                <span>Tiempo <strong id="typing-time">0:00</strong></span
+                ><span>Caracteres <strong id="typing-count">0</strong></span>
+              </div>
+              <label class="form-field"
+                >Tu transcripción<textarea
+                  id="typing-input"
+                  rows="7"
+                  disabled
+                  placeholder="Iniciá la práctica para escribir"
+                  autocomplete="off"
+                  autocorrect="off"
+                  autocapitalize="off"
+                  spellcheck="false"
+                ></textarea>
+              </label>
+              <div class="button-row">
+                <button id="typing-start" class="button">
+                  Iniciar práctica</button
+                ><button id="typing-finish" class="button secondary" disabled>
+                  Finalizar y puntuar
+                </button>
+              </div>
+              <p class="small" style="margin-top: 18px">
+                Ejercicio de transcripción: pegado deshabilitado. Esta prueba
+                local no certifica identidad ni impide asistencia externa.
+              </p>
+              <div id="typing-result" role="status"></div>
+            </article>
+          </section>
+          <section id="history" class="tool-section" hidden>
+            <div class="tool-heading">
+              <span class="eyebrow">Tus resultados</span>
+              <h2>Un registro de tu práctica.</h2>
+              <p>
+                Los resultados se guardan en el servidor local, asociados a tu
+                cuenta.
+              </p>
+            </div>
+            <div id="results-list"></div>
+          </section>
+          <section id="exam-panel" class="tool-section" hidden>
+            <button id="exam-back" class="button secondary">
+              Volver a las herramientas
+            </button>
+            <div class="tool-heading">
+              <span class="eyebrow">Evaluación de demostración</span>
+              <h2 id="exam-title"></h2>
+              <p>
+                Elegí una opción por pregunta. Las respuestas se corrigen en el
+                servidor al entregar.
+              </p>
+            </div>
+            <p id="exam-passage-meta" class="small" hidden></p>
+            <button
+              id="reading-another"
+              class="button secondary"
+              data-exam="reading"
+              hidden
+            >
+              Elegir otra lectura
+            </button>
+            <p id="exam-passage" class="practice-passage" hidden></p>
+            <form id="exam-form">
+              <div id="exam-questions"></div>
+              <button type="submit" class="button">Entregar respuestas</button>
+            </form>
+            <div id="exam-result" role="status"></div>
+          </section>
+        </div>
+        <aside class="notice-card">
+          <span class="eyebrow">Avisos del campus</span>
+          <h3>Para esta prueba</h3>
+          <div id="campus-notices"></div>
+          <p class="small" style="margin-top: 22px">
+            La sesión vence después de 30 minutos sin actividad o al cumplir 2
+            horas. Podés volver a ingresar con tu acceso de prueba.
+          </p>
+          <a class="text-link" href="/">Volver a la presentación</a>
+        </aside>
+      </div>
+    </main>
+    <footer class="site-footer">
+      <div class="container">
+        <p class="small">
+          Preparación independiente, sin aval del Poder Judicial. Acceso de
+          prueba local; no es una plataforma de producción.
+        </p>
+        <nav class="footer-legal" aria-label="Información">
+          <a href="/pages/terminos.html">Términos</a
+          ><a href="/pages/privacidad.html">Privacidad</a
+          ><a href="/pages/fuentes.html">Fuentes de consulta</a>
+        </nav>
+      </div>
+    </footer>
+  </body>
+</html>

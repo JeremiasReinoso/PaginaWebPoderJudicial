@@ -1,0 +1,56 @@
+dialog {
+  width: min(560px, calc(100% - 32px));
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 35px;
+  background: var(--paper);
+  color: var(--ink);
+  max-height: 85vh;
+}
+dialog::backdrop {
+  background: #152f28a6;
+  backdrop-filter: blur(4px);
+}
+.modal-close {
+  float: right;
+  border: 1px solid var(--line);
+  background: transparent;
+  border-radius: 50%;
+  width: 34px;
+  height: 34px;
+  font-size: 22px;
+  line-height: 1;
+}
+.dialog-copy {
+  margin-top: 20px;
+  font-size: 14px;
+}
+.form-field {
+  display: grid;
+  gap: 6px;
+  margin-top: 20px;
+  font-size: 13px;
+}
+.form-field input {
+  width: 100%;
+  min-height: 46px;
+  border: 1px solid #bbc3b6;
+  border-radius: 6px;
+  background: white;
+  padding: 10px 12px;
+}
+.form-message {
+  margin-top: 15px;
+  font-size: 13px;
+  background: #edf3ff;
+  padding: 12px;
+  border-radius: 6px;
+}
+.form-message:empty {
+  display: none;
+}
+dialog h2 {
+  font-size: 34px;
+  letter-spacing: -1px;
+  margin-top: 15px;
+}
