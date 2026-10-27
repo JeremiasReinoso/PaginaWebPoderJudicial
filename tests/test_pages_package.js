@@ -83,7 +83,15 @@ describe('PagesPackage', () => {
         const page = parseHtmlReferences(fs.readFileSync(file, 'utf8'));
         parsed.set(file, page);
         if (!file.endsWith(path.join('campus', 'index.html'))) {
-          assert.deepEqual(page.fields, ['code'], path.basename(file));
+          if (file.endsWith(path.join('pages', 'material-estudio.html'))) {
+            assert.deepEqual(
+              page.fields,
+              ['license_code', 'code'],
+              path.basename(file),
+            );
+          } else {
+            assert.deepEqual(page.fields, ['code'], path.basename(file));
+          }
         }
       }
       for (const [file, page] of parsed.entries()) {

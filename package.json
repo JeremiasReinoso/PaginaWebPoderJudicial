@@ -7,6 +7,7 @@
   "scripts": {
     "start": "node backend/app.js --port 4173",
     "init": "node backend/app.js --init",
+    "init:admin": "node scripts/init_admin.js",
     "build:pages": "node scripts/build_pages.js",
     "package:pages": "node scripts/package_pages.js",
     "package:repo": "node scripts/package_repository.js",

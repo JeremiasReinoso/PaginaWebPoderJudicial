@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="es-AR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Administración de Licencias | Método Judicial</title>
+    <link rel="stylesheet" href="/css/main.css" />
+    <link rel="stylesheet" href="/admin-assets/admin.css" />
+    <script type="module" src="/admin-assets/admin.js"></script>
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="header-inner">
+        <div class="brand">
+          <span class="brand-mark" aria-hidden="true">m.</span>
+          <span>
+            <strong>método judicial</strong>
+            <small>Panel Administrativo de Licencias</small>
+          </span>
+        </div>
+        <div id="admin-header-user" class="admin-header-user" hidden>
+          <span id="admin-user-badge" class="pill"></span>
+          <button id="admin-logout-btn" type="button" class="button secondary">
+            Cerrar sesión
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <main class="container section">
+      <section
+        id="admin-login-section"
+        class="contact-panel admin-login-card"
+        aria-labelledby="admin-login-title"
+      >
+        <span class="eyebrow">Acceso restringido · Servidor protegido</span>
+        <h1 id="admin-login-title">Administración de Licencias</h1>
+        <p>
+          Iniciá sesión con una cuenta administrativa autorizada para crear,
+          consultar, auditar o revocar licencias de uso único.
+        </p>
+        <form id="admin-login-form" novalidate>
+          <label class="form-field" for="admin-username">
+            Usuario administrativo
+            <input
+              id="admin-username"
+              name="username"
+              type="text"
+              autocomplete="username"
+              maxlength="60"
+              required
+            />
+          </label>
+          <label class="form-field" for="admin-password">
+            Contraseña
+            <input
+              id="admin-password"
+              name="password"
+              type="password"
+              autocomplete="current-password"
+              maxlength="256"
+              required
+            />
+          </label>
+          <button
+            id="admin-login-submit"
+            type="submit"
+            class="button"
+            style="margin-top: 22px; width: 100%"
+          >
+            Iniciar sesión administrativa
+          </button>
+          <p
+            id="admin-login-message"
+            class="form-message"
+            role="alert"
+            aria-live="polite"
+          ></p>
+        </form>
+      </section>
+
+      <section id="admin-dashboard-section" hidden>
+        <div class="admin-stats-grid" aria-label="Estadísticas de licencias">
+          <article class="admin-stat-card">
+            <span class="eyebrow">Total emitidas</span>
+            <strong id="stat-total">0</strong>
+          </article>
+          <article class="admin-stat-card">
+            <span class="eyebrow">Disponibles</span>
+            <strong id="stat-available">0</strong>
+          </article>
+          <article class="admin-stat-card">
+            <span class="eyebrow">Activadas (permanentes)</span>
+            <strong id="stat-activated">0</strong>
+          </article>
+          <article class="admin-stat-card">
+            <span class="eyebrow">Revocadas</span>
+            <strong id="stat-revoked">0</strong>
+          </article>
+        </div>
+
+        <div class="admin-two-columns">
+          <section
+            class="contact-panel"
+            aria-labelledby="create-license-heading"
+          >
+            <span class="eyebrow">Emisión de licencia de uso único</span>
+            <h2 id="create-license-heading">Crear nueva licencia</h2>
+            <p class="small">
+              El código completo se mostrará únicamente en el momento de su
+              creación. En la base de datos solo se almacena su huella
+              criptográfica SHA-256.
+            </p>
+            <form id="create-license-form">
+              <label class="form-field" for="client-reference-input">
+                Cliente o referencia interna (opcional)
+                <input
+                  id="client-reference-input"
+                  name="client_reference"
+                  type="text"
+                  placeholder="Ej.: Expediente / Estudiante #104"
+                  maxlength="120"
+                />
+              </label>
+              <button
+                id="create-license-btn"
+                type="submit"
+                class="button"
+                style="margin-top: 18px"
+              >
+                Generar licencia única
+              </button>
+            </form>
+
+            <div
+              id="created-code-box"
+              class="created-code-box"
+              role="region"
+              aria-live="polite"
+              hidden
+            >
+              <span class="eyebrow"
+                >Entrega única · Copiá este código ahora</span
+              >
+              <p class="small">
+                Por seguridad, este código no volverá a mostrarse al recargar la
+                página.
+              </p>
+              <code id="created-code-value" class="created-code-value"></code>
+              <div class="button-row" style="margin-top: 14px">
+                <button id="copy-code-btn" type="button" class="button">
+                  Copiar código
+                </button>
+                <span id="copy-code-status" class="small" role="status"></span>
+              </div>
+            </div>
+          </section>
+
+          <section class="contact-panel" aria-labelledby="export-heading">
+            <span class="eyebrow">Auditoría y exportación</span>
+            <h2 id="export-heading">Exportar listado administrativo</h2>
+            <p class="small">
+              Descargá el padrón de licencias con sus estados, fechas e
+              instalaciones asociadas. La exportación excluye hashes, secretos y
+              tokens de sesión.
+            </p>
+            <div class="button-row" style="margin-top: 18px">
+              <a
+                class="button secondary"
+                href="/api/admin/licenses/export?format=csv"
+                download="licencias-metodo-judicial.csv"
+                >Exportar CSV</a
+              >
+              <a
+                class="button secondary"
+                href="/api/admin/licenses/export?format=json"
+                download="licencias-metodo-judicial.json"
+                >Exportar JSON</a
+              >
+            </div>
+            <p
+              id="admin-action-feedback"
+              class="form-message"
+              role="status"
+              aria-live="polite"
+              style="margin-top: 18px"
+            ></p>
+          </section>
+        </div>
+
+        <section
+          class="contact-panel"
+          style="margin-top: 28px"
+          aria-labelledby="licenses-table-heading"
+        >
+          <div class="admin-toolbar">
+            <div>
+              <span class="eyebrow">Padrón centralizado</span>
+              <h2 id="licenses-table-heading">Estado de licencias</h2>
+            </div>
+            <form id="filter-licenses-form" class="admin-filters">
+              <input
+                id="filter-search"
+                type="search"
+                placeholder="Buscar por prefijo, cliente o instalación…"
+                aria-label="Buscar licencias"
+              />
+              <select id="filter-status" aria-label="Filtrar por estado">
+                <option value="">Todos los estados</option>
+                <option value="available">Disponibles</option>
+                <option value="activated">Activadas</option>
+                <option value="revoked">Revocadas</option>
+              </select>
+              <button type="submit" class="button secondary">Filtrar</button>
+            </form>
+          </div>
+
+          <div class="admin-table-wrap">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th scope="col">Prefijo</th>
+                  <th scope="col">Referencia cliente</th>
+                  <th scope="col">Estado</th>
+                  <th scope="col">Creada</th>
+                  <th scope="col">Activación</th>
+                  <th scope="col">Instalación asociada</th>
+                  <th scope="col">Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="licenses-tbody"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <div class="admin-two-columns" style="margin-top: 28px">
+          <section class="contact-panel" aria-labelledby="audit-logs-heading">
+            <span class="eyebrow">Trazabilidad administrativa</span>
+            <h2 id="audit-logs-heading">Historial de auditoría</h2>
+            <div id="audit-logs-list" class="admin-log-list"></div>
+          </section>
+
+          <section
+            class="contact-panel"
+            aria-labelledby="activations-logs-heading"
+          >
+            <span class="eyebrow">Registro de intentos</span>
+            <h2 id="activations-logs-heading">Historial de activaciones</h2>
+            <div id="activations-logs-list" class="admin-log-list"></div>
+          </section>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

@@ -13,6 +13,7 @@ sin dependencias externas para ejecutar el campus.
 - `scripts/`: generación de páginas, empaquetado y arranque.
 - `tests/`: dominio, arquitectura, seguridad y publicación.
 - `docs/ARQUITECTURA.md`: modelo del dominio, reglas y fronteras.
+- `docs/SISTEMA-LICENCIAS.md`: arquitectura, seguridad, instalación y operación del Sistema de Validación de Licencias — Poder Judicial (integrado en `pages/material-estudio.html` y panel administrativo en `/panel-licencias`).
 
 Los PDF, fichas completas, códigos y datos de estudiantes se guardan fuera del
 repositorio, en `%USERPROFILE%/.codex/private/MetodoJudicialPrueba/`.

@@ -6,6 +6,7 @@ import { DatabaseSync } from 'node:sqlite';
 import { digest, normalize_code, new_code } from './access.js';
 import { IDLE, LIFETIME } from './config.js';
 import { ValueError } from './domain.js';
+import { runLicenseMigrations } from './license_db.js';
 
 export class Store {
   constructor(dbPath) {
@@ -24,6 +25,7 @@ export class Store {
       if (!cols.some((row) => row.name === 'content')) {
         db.exec('ALTER TABLE attempts ADD COLUMN content TEXT');
       }
+      runLicenseMigrations(db);
     });
   }
 
