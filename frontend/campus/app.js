@@ -1,4 +1,4 @@
-import { api, initializeSession } from './api.js';
+import { api, initializeSession, loginPageUrl } from './api.js';
 import { byId, message } from './dom.js';
 import { initializeNavigation } from './navigation.js';
 import { initializeExams } from './exams.js';
@@ -22,7 +22,7 @@ async function initializeCampus() {
 byId('logout').addEventListener('click', async () => {
   try {
     await api('/api/logout', {});
-    location.replace('/ingreso');
+    location.replace(loginPageUrl());
   } catch (error) {
     message(error.message, true);
   }

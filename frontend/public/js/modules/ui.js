@@ -17,8 +17,19 @@ function configuredCampus() {
     return null;
   }
 }
-function localCampus() {
-  return location.hostname === '127.0.0.1' || location.hostname === 'localhost';
+function resolveCampusEntryUrl() {
+  const path = location.pathname;
+  if (path.includes('/pages/')) {
+    return new URL('../campus/index.html', location.href).href;
+  }
+  return new URL('./campus/index.html', location.href).href;
+}
+function resolveClientBackendUrl() {
+  const path = location.pathname;
+  if (path.includes('/pages/')) {
+    return new URL('../campus/client_backend.js', location.href).href;
+  }
+  return new URL('./campus/client_backend.js', location.href).href;
 }
 window.openStudyDialog = (id) => {
   if (id === 'login-dialog') {
@@ -28,16 +39,6 @@ window.openStudyDialog = (id) => {
     if (campus && campus.origin !== location.origin) {
       window.location.assign(new URL('/ingreso', campus).href);
       return;
-    }
-    if (!campus && !localCampus()) {
-      const message = document.getElementById('login-message');
-      message.textContent =
-        'El ingreso al campus todavía no está habilitado en este sitio.';
-      document
-        .querySelectorAll('#login-form input, #login-form button')
-        .forEach((el) => {
-          el.disabled = true;
-        });
     }
   }
   const dialog = document.getElementById(id);
@@ -63,7 +64,6 @@ document.querySelectorAll('dialog').forEach((dialog) => {
     }
   });
 });
-// Only the backend validates the code. There is no static/client-side fallback.
 document
   .getElementById('login-form')
   ?.addEventListener('submit', async (event) => {
@@ -73,29 +73,43 @@ document
     const message = document.getElementById('login-message');
     button.disabled = true;
     message.textContent = 'Verificando acceso…';
+    const fields = new FormData(form);
+    const code = fields.get('code');
     try {
-      const sessionResponse = await fetch('/api/session', {
-        cache: 'no-store',
-        credentials: 'same-origin',
-      });
-      if (!sessionResponse.ok)
-        throw new Error('No se pudo conectar con el servicio de ingreso.');
-      const session = await sessionResponse.json();
-      const fields = new FormData(form);
-      const response = await fetch('/api/login', {
-        method: 'POST',
-        credentials: 'same-origin',
-        cache: 'no-store',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRF-Token': session.csrf,
-        },
-        body: JSON.stringify({ code: fields.get('code') }),
-      });
-      const result = await response.json();
-      if (!response.ok) throw new Error(result.error || 'No se pudo ingresar.');
+      let usedServer = false;
+      try {
+        const sessionResponse = await fetch('/api/session', {
+          cache: 'no-store',
+          credentials: 'same-origin',
+        });
+        const contentType = sessionResponse.headers.get('content-type') || '';
+        if (sessionResponse.ok && contentType.includes('application/json')) {
+          usedServer = true;
+          const session = await sessionResponse.json();
+          const response = await fetch('/api/login', {
+            method: 'POST',
+            credentials: 'same-origin',
+            cache: 'no-store',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-CSRF-Token': session.csrf,
+            },
+            body: JSON.stringify({ code }),
+          });
+          const result = await response.json();
+          if (!response.ok)
+            throw new Error(result.error || 'No se pudo ingresar.');
+          form.reset();
+          window.location.assign('/campus/');
+          return;
+        }
+      } catch (serverErr) {
+        if (usedServer) throw serverErr;
+      }
+      const { clientLogin } = await import(resolveClientBackendUrl());
+      await clientLogin(String(code || ''));
       form.reset();
-      window.location.assign('/campus');
+      window.location.assign(resolveCampusEntryUrl());
     } catch (error) {
       message.textContent =
         error.message || 'No se pudo conectar con el campus de prueba.';

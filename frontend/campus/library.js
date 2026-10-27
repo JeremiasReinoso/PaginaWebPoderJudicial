@@ -15,7 +15,9 @@ import { showSection } from './navigation.js';
     requestId = 0;
   function book(id, text, page) {
     const link = el('a', text, 'library-source-link');
-    link.href = `/api/library/books/${id}.pdf${page ? '#page=' + page : ''}`;
+    const baseHref =
+      selected?.bookUrls?.[id] || `/api/library/books/${id}.pdf`;
+    link.href = `${baseHref}${page ? '#page=' + page : ''}`;
     link.target = '_blank';
     link.rel = 'noopener noreferrer';
     return link;

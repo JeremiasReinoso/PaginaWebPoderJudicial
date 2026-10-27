@@ -1,0 +1,12 @@
+node_modules/
+__pycache__/
+.env
+.env.*
+!.env.example
+tmp/
+output/
+*.sqlite3
+*.sqlite3-*
+acceso-prueba.txt
+codigo-*.txt
+dist/

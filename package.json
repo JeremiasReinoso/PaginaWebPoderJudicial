@@ -1,0 +1,20 @@
+{
+  "name": "metodo-judicial",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Preparación independiente para el concurso de ingreso al Poder Judicial de Mendoza",
+  "type": "module",
+  "scripts": {
+    "start": "node backend/app.js --port 4173",
+    "init": "node backend/app.js --init",
+    "build:pages": "node scripts/build_pages.js",
+    "package:pages": "node scripts/package_pages.js",
+    "package:repo": "node scripts/package_repository.js",
+    "package:friend": "node scripts/package_friend.js",
+    "verify:friend": "node scripts/verify_friend.js",
+    "test": "node --test tests/*.js"
+  },
+  "engines": {
+    "node": ">=22.5.0"
+  }
+}
