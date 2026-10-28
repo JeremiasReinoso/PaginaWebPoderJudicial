@@ -5,16 +5,7 @@
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Ingreso por código | Método Judicial</title>
     <link rel="stylesheet" href="./css/main.css" />
-    <script>
-      (function(){
-        try {
-          var t = localStorage.getItem('mj_theme') || (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
-          document.documentElement.setAttribute('data-theme', t);
-        } catch(e) {}
-      })();
-    </script>
     <script defer src="./js/config.js"></script>
-    <script defer src="./js/modules/theme.js"></script>
     <script defer src="./js/modules/ui.js"></script>
   </head>
   <body>
@@ -24,7 +15,6 @@
           <span class="brand-mark" aria-hidden="true">m.</span>
           <span><strong>método judicial</strong><small>Tu espacio de estudio</small></span>
         </a>
-        <button type="button" class="theme-toggle-btn" aria-label="Cambiar tema">🌙 Modo Oscuro</button>
       </div>
     </header>
     <main class="container section">
