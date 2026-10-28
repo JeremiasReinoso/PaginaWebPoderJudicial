@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { terms_content, privacy_content } from './legal_content.js';
+import { bundle_styles } from './styles.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 export const ROOT = path.resolve(__dirname, '..', 'frontend', 'public');
@@ -37,11 +38,19 @@ export function layout(title, content, current = 'home', nested = true, extraScr
 <meta name="description" content="Una propuesta de estudio para el concurso de ingreso al Poder Judicial de Mendoza: cinco módulos, recursos de repaso y práctica por etapas.">
 <meta name="theme-color" content="#155eef"><link rel="icon" href="${base}assets/img/logos/favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="${base}css/main.css">
-<script defer src="${base}js/config.js"></script><script defer src="${base}js/data/catalogo-pdfs.js"></script><script defer src="${base}js/modules/navigation.js"></script><script defer src="${base}js/modules/ui.js"></script><script defer src="${base}js/main.js"></script>${extraScript}</head>
+<script>
+(function(){
+  try {
+    var t = localStorage.getItem('mj_theme') || (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+    document.documentElement.setAttribute('data-theme', t);
+  } catch(e) {}
+})();
+</script>
+<script defer src="${base}js/config.js"></script><script defer src="${base}js/data/catalogo-pdfs.js"></script><script defer src="${base}js/modules/theme.js"></script><script defer src="${base}js/modules/navigation.js"></script><script defer src="${base}js/modules/ui.js"></script><script defer src="${base}js/main.js"></script>${extraScript}</head>
 <body><a class="skip-link" href="#contenido">Saltar al contenido</a>
 <div class="utility-bar"><div class="container utility-inner"><span>PREPARACIÓN INDEPENDIENTE · MENDOZA</span><a href="${base}pages/fuentes.html">Fuentes de consulta</a></div></div>
 <header class="site-header"><div class="header-inner"><a href="${home}" class="brand" aria-label="Método Judicial, inicio"><span class="brand-mark" aria-hidden="true">m.</span><span><strong>método judicial</strong><small>Tu próximo paso, con método.</small></span></a>
-<button class="menu-toggle" aria-expanded="true" aria-controls="navigation">Menú</button><nav class="nav-links" id="navigation" aria-label="Principal">${navigation}<button class="button secondary" data-dialog="login-dialog">Ingresar al campus</button></nav></div></header>
+<div style="display:flex;align-items:center;gap:10px"><button type="button" class="theme-toggle-btn" aria-label="Cambiar tema">🌙 Modo Oscuro</button><button class="menu-toggle" aria-expanded="true" aria-controls="navigation">Menú</button></div><nav class="nav-links" id="navigation" aria-label="Principal">${navigation}<button class="button secondary" data-dialog="login-dialog">Ingresar al campus</button></nav></div></header>
 <main id="contenido">${content}</main>
 <footer class="site-footer"><div class="container"><div class="footer-top"><a class="brand" href="${home}"><span class="brand-mark" aria-hidden="true">m.</span><span><strong>método judicial</strong><small>Estudiar con un camino claro.</small></span></a><p>Propuesta de preparación independiente. No es un sitio oficial ni tiene vinculación institucional con el Poder Judicial de Mendoza.</p></div><div class="footer-bottom"><span>© 2026 Método Judicial · Nombre provisional</span><span><a href="${base}pages/institucional.html">Sobre el proyecto</a> &nbsp; / &nbsp; <a href="${base}pages/novedades.html">Avisos</a> &nbsp; / &nbsp; <a href="${base}pages/contacto.html">Inscripción y acceso</a></span><span>Hecho para acompañar tu estudio.</span></div><nav class="footer-legal" aria-label="Información legal"><a href="${base}pages/terminos.html">Términos y condiciones</a><a href="${base}pages/privacidad.html">Política de privacidad</a><a href="${base}pages/fuentes.html">Fuentes de consulta</a><span>Información transparente · Proyecto independiente</span></nav></div></footer>
 <dialog id="login-dialog" aria-labelledby="login-title"><button class="modal-close" data-close aria-label="Cerrar ingreso">×</button><span class="eyebrow">Tu espacio de estudio</span><h2 id="login-title">Volvé a tu camino.</h2><p class="dialog-copy">Ingresá con tu código personal. El equipo te lo entregará después de confirmar tu pago.</p><div class="notice" style="margin:20px 0 0">Tu código es personal. No lo publiques ni lo compartas.</div><form id="login-form"><label class="form-field">Código de acceso<input name="code" type="password" placeholder="Ingresá el código que te entregó el equipo" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="128" required></label><button type="submit" class="button" style="margin-top:24px;width:100%">Ingresar con código</button><p id="login-message" class="form-message" role="status"></p></form><p class="dialog-copy small">¿Todavía no tenés acceso? <a href="${base}pages/contacto.html">Conocé cómo será la inscripción</a>.</p></dialog>
@@ -95,6 +104,24 @@ export function generatePages(targetRoot = ROOT) {
       layout(title, content, current, nested, extraScript),
       'utf8',
     );
+  }
+  if (targetRoot === ROOT) {
+    const frontendDir = path.resolve(ROOT, '..');
+    const frontendCssDir = path.join(frontendDir, 'css');
+    const frontendJsDir = path.join(frontendDir, 'js', 'modules');
+    fs.mkdirSync(frontendCssDir, { recursive: true });
+    fs.mkdirSync(frontendJsDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(frontendCssDir, 'main.css'),
+      bundle_styles(path.join(ROOT, 'css')),
+      'utf8',
+    );
+    for (const file of ['config.js', 'modules/theme.js', 'modules/ui.js']) {
+      fs.copyFileSync(
+        path.join(ROOT, 'js', file),
+        path.join(frontendDir, 'js', file),
+      );
+    }
   }
   console.log(`Generated ${pages.length} public pages.`);
 }

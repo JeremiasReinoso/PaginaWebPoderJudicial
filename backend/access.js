@@ -10,7 +10,9 @@ export function digest(value) {
 export function normalize_code(code) {
   if (typeof code !== 'string') return null;
   const normalized = code.replace(/[-\s]/g, '').toUpperCase();
-  return /^MJ[0-9A-F]{32}$/.test(normalized) ? normalized : null;
+  if (/^MJ[0-9A-F]{32}$/.test(normalized)) return normalized;
+  if (/^PJ[0-9A-F]{40}$/.test(normalized)) return normalized;
+  return null;
 }
 
 export function new_code() {
@@ -57,7 +59,8 @@ export function authenticate(store, code, address) {
   if (typeof code !== 'string' || code.length < 1 || code.length > 128) {
     throw new CampusError(400, 'Ingresá tu código de acceso.');
   }
-  const fingerprint = digest(normalize_code(code) || 'invalid');
+  const norm = normalize_code(code);
+  const fingerprint = digest(norm || 'invalid');
   const now = Date.now() / 1000;
   let failure = null;
   let principal = null;
@@ -75,12 +78,70 @@ export function authenticate(store, code, address) {
         'Demasiados intentos. Esperá 15 minutos.',
       );
     } else {
-      const access = db
+      let access = db
         .prepare(
           `SELECT c.*, u.active AS account_active FROM access_codes c
            JOIN users u ON u.username = c.username WHERE fingerprint = ?`,
         )
         .get(fingerprint);
+
+      if (!access && norm && norm.startsWith('PJ')) {
+        let lic = null;
+        try {
+          lic =
+            db.prepare('SELECT * FROM licenses WHERE code = ?').get(code) ||
+            db
+              .prepare(
+                'SELECT * FROM licenses WHERE replace(replace(code, "-", ""), " ", "") = ?',
+              )
+              .get(norm);
+        } catch {}
+
+        if (lic) {
+          if (lic.status === 'revoked') {
+            db.prepare('INSERT INTO failures VALUES(?, ?, ?)').run(
+              address,
+              fingerprint,
+              now,
+            );
+            failure = new CampusError(
+              403,
+              'La licencia ingresada ha sido revocada por administración.',
+            );
+            return;
+          }
+          const username = `estudiante_${(lic.code_prefix || norm.slice(0, 10)).replace(/[^A-Za-z0-9]/g, '')}`;
+          const activatedAt = lic.activated_at || new Date().toISOString();
+          const instId =
+            lic.installation_id ||
+            `inst_${crypto.randomBytes(8).toString('hex')}`;
+          if (lic.status === 'available') {
+            db.prepare(
+              "UPDATE licenses SET status = 'activated', activated_at = ?, installation_id = ? WHERE id = ?",
+            ).run(activatedAt, instId, lic.id);
+            try {
+              db.prepare(
+                'INSERT INTO license_activations (id, license_id, installation_id, activated_at, ip_address) VALUES (?, ?, ?, ?, ?)',
+              ).run(
+                `act_${crypto.randomBytes(8).toString('hex')}`,
+                lic.id,
+                instId,
+                activatedAt,
+                address || '127.0.0.1',
+              );
+            } catch {}
+          }
+          db.prepare(
+            "INSERT INTO users (username, salt, password, active) VALUES (?, '', '', 1) ON CONFLICT(username) DO NOTHING",
+          ).run(username);
+          db.prepare(
+            'INSERT INTO access_codes (fingerprint, username, active, expires) VALUES (?, ?, 1, NULL) ON CONFLICT(fingerprint) DO UPDATE SET active = 1, expires = NULL',
+          ).run(fingerprint, username);
+
+          access = { username, active: 1, account_active: 1, expires: null };
+        }
+      }
+
       if (
         !access ||
         access.active !== 1 ||

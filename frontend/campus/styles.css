@@ -675,3 +675,64 @@ h3:focus {
   max-width: 85ch;
   line-height: 2;
 }
+
+/* Light Theme Overrides for Campus */
+[data-theme="light"] body,
+[data-theme="light"] main {
+  background: #f8fafc;
+  color: #0f172a;
+}
+[data-theme="light"] .campus-tabs button {
+  background: #ffffff;
+  color: #334155;
+  border-color: #cbd5e1;
+}
+[data-theme="light"] .campus-tabs button:hover {
+  background: #f1f5f9;
+}
+[data-theme="light"] .campus-tabs button[aria-pressed='true'] {
+  background: #155eef;
+  border-color: #155eef;
+  color: #ffffff;
+}
+[data-theme="light"] .tool-card {
+  background: #ffffff;
+  border-color: #e2e8f0;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.05);
+  color: #0f172a;
+}
+[data-theme="light"] .tool-card h3 {
+  color: #0f172a;
+}
+[data-theme="light"] .tool-card p {
+  color: #475569;
+}
+[data-theme="light"] .exam-card,
+[data-theme="light"] .panel-box,
+[data-theme="light"] .history-table-wrapper {
+  background: #ffffff;
+  border-color: #e2e8f0;
+  color: #0f172a;
+}
+[data-theme="light"] .history-table th {
+  background: #f1f5f9;
+  color: #334155;
+  border-color: #e2e8f0;
+}
+[data-theme="light"] .history-table td {
+  border-color: #e2e8f0;
+  color: #0f172a;
+}
+[data-theme="light"] #typing-input {
+  background: #ffffff;
+  border-color: #cbd5e1;
+  color: #0f172a;
+}
+[data-theme="light"] #exam-passage {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  color: #0f172a;
+  border-radius: 8px;
+  padding: 16px;
+}
+

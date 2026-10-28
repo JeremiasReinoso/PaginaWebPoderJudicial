@@ -6,6 +6,15 @@
     <title>Campus de prueba | Método Judicial</title>
     <link rel="stylesheet" href="../css/main.css" />
     <link rel="stylesheet" href="./styles.css" />
+    <script>
+      (function(){
+        try {
+          var t = localStorage.getItem('mj_theme') || (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+          document.documentElement.setAttribute('data-theme', t);
+        } catch(e) {}
+      })();
+    </script>
+    <script defer src="../js/modules/theme.js"></script>
     <script type="module" src="./app.js"></script>
   </head>
   <body>
@@ -20,6 +29,7 @@
           ></a
         >
         <div class="account">
+          <button type="button" class="theme-toggle-btn" aria-label="Cambiar tema">🌙 Modo Oscuro</button>
           <span id="account-name"></span
           ><button id="logout" class="button secondary">Cerrar sesión</button>
         </div>

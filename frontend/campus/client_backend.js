@@ -602,7 +602,9 @@ async function sha256Hex(text) {
 function normalizeCode(code) {
   if (typeof code !== 'string') return null;
   const normalized = code.replace(/[-\s]/g, '').toUpperCase();
-  return /^MJ[0-9A-F]{32}$/.test(normalized) ? normalized : null;
+  if (/^MJ[0-9A-F]{32}$/.test(normalized)) return normalized;
+  if (/^PJ[0-9A-F]{40}$/.test(normalized)) return normalized;
+  return null;
 }
 
 function loadState() {
@@ -720,6 +722,86 @@ export async function clientLogin(code) {
     throw new Error('Código incorrecto, vencido o no habilitado.');
   }
   const fingerprint = await sha256Hex(normalized);
+
+  // Soporte directo para códigos de licencia generados en el panel administrativo
+  if (normalized.startsWith('PJ')) {
+    let store = null;
+    try {
+      const raw = localStorage.getItem('mj_judicial_license_store_v1');
+      if (raw) store = JSON.parse(raw);
+    } catch {}
+    const lic = store?.licenses?.find((l) => {
+      const clean = l.clean || (l.code ? l.code.replace(/[-\s]/g, '').toUpperCase() : '');
+      return clean === normalized;
+    });
+
+    if (!lic) {
+      state.failures.push(now);
+      saveState(state);
+      throw new Error('Código de licencia no encontrado o no habilitado en el panel.');
+    }
+
+    if (lic.status === 'revoked') {
+      state.failures.push(now);
+      saveState(state);
+      throw new Error('La licencia ingresada ha sido revocada por administración.');
+    }
+
+    const activatedAt = lic.activatedAt || new Date().toISOString();
+    const instId = lic.installationId || `inst_${randomHex(16)}`;
+    if (lic.status === 'available') {
+      lic.status = 'activated';
+      lic.activatedAt = activatedAt;
+      lic.installationId = instId;
+      store.activations = store.activations || [];
+      store.activations.push({
+        id: store.activations.length + 1,
+        licenseId: lic.id,
+        codePrefix: lic.prefix,
+        installationId: instId,
+        activatedAt,
+        ip: '127.0.0.1 (local browser)',
+      });
+      store.auditLogs = store.auditLogs || [];
+      store.auditLogs.unshift({
+        id: store.auditLogs.length + 1,
+        action: 'license_activated',
+        details: `Licencia ${lic.prefix} activada desde ingreso de estudiante`,
+        adminUser: 'estudiante',
+        timestamp: activatedAt,
+      });
+      try {
+        localStorage.setItem('mj_judicial_license_store_v1', JSON.stringify(store));
+      } catch {}
+    }
+
+    // Desbloquear también los PDFs de estudio en material-estudio.html
+    try {
+      localStorage.setItem(
+        'mj_judicial_installation_cred_v1',
+        JSON.stringify({
+          licenseId: lic.id,
+          token: `inst_${randomHex(32)}`,
+          code: lic.code,
+          client: lic.client || '',
+          activatedAt,
+        }),
+      );
+    } catch {}
+
+    const principal = `estudiante_${(lic.prefix || normalized.slice(0, 10)).replace(/[^A-Za-z0-9]/g, '')}`;
+    const csrf = randomHex(24);
+    state.failures = [];
+    state.session = {
+      username: principal,
+      csrf,
+      created: now,
+      touched: now,
+    };
+    saveState(state);
+    return { authenticated: true, csrf };
+  }
+
   const principal =
     fingerprint ===
     '954340c83b3299490a969abf4f8129c6112a0b3e5b61488ea475ed0dc0a1f1fe'

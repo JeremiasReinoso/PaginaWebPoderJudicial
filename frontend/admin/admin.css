@@ -2438,3 +2438,105 @@ dialog::backdrop {
 .admin-login-card .button {
   box-sizing: border-box;
 }
+
+/* Theme Toggle Button & Light Theme Overrides for Admin Panel */
+.theme-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #142137;
+  color: #f1f5ff;
+  border: 1px solid #2b3a53;
+  padding: 7px 13px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  line-height: 1.2;
+  transition: background 0.15s, border-color 0.15s;
+  user-select: none;
+}
+.theme-toggle-btn:hover {
+  background: #263f6b;
+  border-color: #4973ba;
+}
+.theme-toggle-btn .theme-icon {
+  font-size: 14px;
+  line-height: 1;
+}
+.theme-toggle-btn .theme-text {
+  font-size: 12px;
+  letter-spacing: 0.3px;
+}
+
+[data-theme="light"] {
+  --paper: #f8fafc;
+  --white: #ffffff;
+  --ink: #0f172a;
+  --muted: #475569;
+  --primary: #155eef;
+  --line: #e2e8f0;
+}
+[data-theme="light"] body,
+[data-theme="light"] main {
+  background: #f8fafc;
+  color: #0f172a;
+}
+[data-theme="light"] .contact-panel {
+  background: #ffffff;
+  border-color: #e2e8f0;
+  color: #0f172a;
+  box-shadow: 0 8px 30px rgba(15, 23, 42, 0.07);
+}
+[data-theme="light"] .contact-panel p {
+  color: #475569;
+}
+[data-theme="light"] .site-header {
+  background: rgba(255, 255, 255, 0.95);
+  border-bottom: 1px solid #e2e8f0;
+}
+[data-theme="light"] .brand {
+  color: #0f172a;
+}
+[data-theme="light"] .brand-mark {
+  background: #155eef;
+  color: #ffffff;
+}
+[data-theme="light"] .form-field input,
+[data-theme="light"] input[type="text"],
+[data-theme="light"] input[type="password"],
+[data-theme="light"] select {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  color: #0f172a;
+}
+[data-theme="light"] .admin-table-wrapper {
+  background: #ffffff;
+  border-color: #e2e8f0;
+}
+[data-theme="light"] table.admin-table th {
+  background: #f1f5f9;
+  color: #334155;
+  border-color: #e2e8f0;
+}
+[data-theme="light"] table.admin-table td {
+  border-color: #e2e8f0;
+  color: #0f172a;
+}
+[data-theme="light"] .admin-stat-card {
+  background: #ffffff;
+  border-color: #e2e8f0;
+}
+[data-theme="light"] .admin-stat-number {
+  color: #155eef;
+}
+[data-theme="light"] .theme-toggle-btn {
+  background: #ffffff;
+  color: #0f172a;
+  border-color: #cbd5e1;
+}
+[data-theme="light"] .theme-toggle-btn:hover {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+}
+
