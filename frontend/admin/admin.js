@@ -10,7 +10,13 @@ function el(tag, text, className) {
   return node;
 }
 
+const SERVER_HINT =
+  'Para entrar, abrí el panel desde el servidor: ejecutá node scripts/iniciar.js y visitá http://127.0.0.1:4173/panel-licencias';
+
 async function adminApi(path, body) {
+  if (location.protocol === 'file:') {
+    throw new Error(SERVER_HINT);
+  }
   const options = {
     method: body !== undefined ? 'POST' : 'GET',
     credentials: 'same-origin',
@@ -24,10 +30,18 @@ async function adminApi(path, body) {
     }
     options.body = JSON.stringify(body);
   }
-  const res = await fetch(path, options);
+  let res;
+  try {
+    res = await fetch(path, options);
+  } catch {
+    throw new Error(`No hay conexión con el servidor. ${SERVER_HINT}`);
+  }
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
-    const err = new Error(data.error || 'Error en la operación administrativa.');
+    const err = new Error(
+      data.error ||
+        `Error en la operación administrativa (${res.status}). ${SERVER_HINT}`,
+    );
     err.status = res.status;
     throw err;
   }
@@ -199,8 +213,10 @@ async function initializeAdminPanel() {
     } else {
       showLoginView();
     }
-  } catch {
+  } catch (err) {
     showLoginView();
+    const msg = $('admin-login-message');
+    if (msg && location.protocol === 'file:') msg.textContent = err.message;
   }
 }
 

@@ -20,8 +20,8 @@ repositorio, en `%USERPROFILE%/.codex/private/MetodoJudicialPrueba/`.
 
 ## Probar en esta computadora
 
-Ejecutar `scripts/start_campus.ps1`, o `python backend/app.py --init` y luego
-`python backend/app.py --port 4173`. Abrir `http://127.0.0.1:4173/ingreso`.
+Ejecutar `node scripts/iniciar.js` (prepara el acceso y arranca el servidor), o `node backend/app.js --init` y luego
+`node backend/app.js --port 4173`. Abrir `http://127.0.0.1:4173/ingreso`.
 El código local está en `codigo-prueba.txt`, dentro de la carpeta privada.
 No se pide usuario ni contraseña adicional. Crear otro acceso:
 `python backend/app.py --create-code estudiante_001`; revocar:

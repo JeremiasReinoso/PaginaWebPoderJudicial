@@ -26,7 +26,7 @@ El usuario y la contraseña están en `backend/private/admin_credentials.json`:
 ## Puesta en marcha
 
 ```bash
-node backend/app.js --port 4173
+node scripts/iniciar.js
 ```
 
 - Panel: `http://127.0.0.1:4173/panel-licencias`

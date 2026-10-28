@@ -2399,3 +2399,42 @@ dialog::backdrop {
   border: 1px solid rgba(15, 23, 42, 0.08);
   font-size: 13px;
 }
+
+/* --- Ajuste del acceso: texto centrado y contenido dentro del contenedor --- */
+.admin-login-card {
+  box-sizing: border-box;
+  width: min(520px, 100% - 32px);
+  overflow: hidden;
+  text-align: center;
+}
+
+.admin-login-card h1 {
+  font-size: clamp(28px, 7vw, 42px);
+  line-height: 1.1;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  text-align: center;
+}
+
+.admin-login-card p,
+.admin-login-card label,
+.admin-login-card .eyebrow,
+.admin-login-card .form-message {
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+.admin-login-card .form-field {
+  display: block;
+  width: 100%;
+}
+
+.admin-login-card .form-field input {
+  box-sizing: border-box;
+  width: 100%;
+  text-align: center;
+}
+
+.admin-login-card .button {
+  box-sizing: border-box;
+}

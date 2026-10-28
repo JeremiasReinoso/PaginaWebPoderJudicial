@@ -20,7 +20,6 @@ export const ROOT_FILES = [
   '.gitattributes',
 ];
 export const SUFFIXES = new Set([
-  '.ps1',
   '.js',
   '.json',
   '.css',

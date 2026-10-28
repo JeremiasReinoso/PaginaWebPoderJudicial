@@ -8,7 +8,7 @@ La presentación está preparada para GitHub Pages mediante un artefacto públic
 
 ## Prueba local y administración
 
-Ejecutar `scripts/start_campus.ps1` y abrir `http://127.0.0.1:4173/ingreso`. El código de prueba y la base se guardan fuera del repositorio, en `%USERPROFILE%/.codex/private/MetodoJudicialPrueba/`. El código está en `codigo-prueba.txt`. El historial de la demostración anterior se conserva cuando está disponible.
+Ejecutar `node scripts/iniciar.js` y abrir `http://127.0.0.1:4173/ingreso`. El código de prueba y la base se guardan fuera del repositorio, en `%USERPROFILE%/.codex/private/MetodoJudicialPrueba/`. El código está en `codigo-prueba.txt`. El historial de la demostración anterior se conserva cuando está disponible.
 
 Crear un código: `python backend/app.py --create-code estudiante_001`. La etiqueta es administrativa. `--days 30` limita opcionalmente la vigencia. Para revocar el código y sus sesiones: `python backend/app.py --revoke-code estudiante_001`. No se reemplazan ni reactivan automáticamente códigos existentes.
 

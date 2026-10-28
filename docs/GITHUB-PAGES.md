@@ -34,7 +34,7 @@ Al tocar Ingresar en Pages, el navegador abre `/ingreso` en el origen del backen
 
 ## Código de prueba local
 
-`scripts/start_campus.ps1` prepara un código si no existe y arranca la prueba en `http://127.0.0.1:4173/ingreso`. El código se guarda en `%USERPROFILE%/.codex/private/MetodoJudicialPrueba/codigo-prueba.txt`, fuera del repositorio. El ingreso anterior por usuario y contraseña fue eliminado; las sesiones anteriores se invalidan al crear el código.
+`node scripts/iniciar.js` prepara un código si no existe y arranca la prueba en `http://127.0.0.1:4173/ingreso`. El código se guarda en `%USERPROFILE%/.codex/private/MetodoJudicialPrueba/codigo-prueba.txt`, fuera del repositorio. El ingreso anterior por usuario y contraseña fue eliminado; las sesiones anteriores se invalidan al crear el código.
 
 Para crear otro código: `python backend/app.py --create-code estudiante_001`. La etiqueta es administrativa, no se pide al ingresar. Opcional: `--days 30` para limitar su vigencia. El código no se pasa como argumento de consola y se escribe únicamente en su archivo privado. Revocar: `python backend/app.py --revoke-code estudiante_001`; invalida también sus sesiones.
 
