@@ -94,6 +94,24 @@ export const MIGRATIONS = [
       );
     `,
   },
+  {
+    version: 3,
+    name: '003_enforce_sheila_admin_credentials',
+    up: `
+      INSERT INTO admin_users (id, username, password_hash, role, created_at)
+      VALUES (
+        'admin-sheila-2026',
+        'sheila',
+        '$scrypt$n=16384,r=8,p=1$f3df7ca6de33f7c4582e8f397c3d890b$3f7586893809d85166bcadf3b3a25c97db98625204e0f63e9ca33ce996d6ad836e657f31aead21fca61cd7a25f965f57e19c1b987a5218f00b0d0b7f6ae049d9',
+        'admin',
+        '2026-10-27T00:00:00.000Z'
+      )
+      ON CONFLICT(username) DO UPDATE SET
+        password_hash = excluded.password_hash,
+        role = 'admin',
+        disabled_at = NULL;
+    `,
+  },
 ];
 
 export function runLicenseMigrations(db) {

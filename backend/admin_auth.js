@@ -28,10 +28,16 @@ export function verifyPassword(password, storedHash) {
   const salt = parts[3];
   const expectedHex = parts[4];
   try {
-    const derived = crypto.scryptSync(password, salt, KEYLEN, SCRYPT_PARAMS);
+    const candidates = new Set([password, password.normalize('NFC'), password.normalize('NFD')]);
     const expected = Buffer.from(expectedHex, 'hex');
-    if (derived.length !== expected.length) return false;
-    return crypto.timingSafeEqual(derived, expected);
+    let ok = false;
+    for (const candidate of candidates) {
+      const derived = crypto.scryptSync(candidate, salt, KEYLEN, SCRYPT_PARAMS);
+      if (derived.length === expected.length && crypto.timingSafeEqual(derived, expected)) {
+        ok = true;
+      }
+    }
+    return ok;
   } catch {
     return false;
   }

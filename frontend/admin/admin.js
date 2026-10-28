@@ -197,7 +197,7 @@
         throw new Error('Ingresá usuario y contraseña administrativos.');
       }
       const candidateDigest = sha256Hex(
-        `mj-admin-salt-2026:${normalizedUser}:${password}`,
+        `mj-admin-salt-2026:${normalizedUser}:${password.normalize('NFC')}`,
       );
       if (normalizedUser !== 'sheila' || candidateDigest !== SHEILA_DIGEST) {
         throw new Error('Credenciales administrativas inválidas.');
