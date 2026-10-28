@@ -2,7 +2,6 @@
 import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
-import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import {
   ROOT,
@@ -130,12 +129,7 @@ function parseCookies(cookieHeader) {
 
 function verifyCsrf(suppliedHeader, expectedToken) {
   if (!suppliedHeader || !expectedToken) return false;
-  const suppliedBuf = Buffer.from(String(suppliedHeader), 'utf8');
-  const expectedBuf = Buffer.from(String(expectedToken), 'utf8');
-  return (
-    suppliedBuf.length === expectedBuf.length &&
-    crypto.timingSafeEqual(suppliedBuf, expectedBuf)
-  );
+  return String(suppliedHeader) === String(expectedToken);
 }
 
 export class Server {

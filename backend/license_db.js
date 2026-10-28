@@ -82,34 +82,25 @@ export const MIGRATIONS = [
   },
   {
     version: 2,
-    name: '002_seed_sheila_admin_user',
-    up: `
-      INSERT OR IGNORE INTO admin_users (id, username, password_hash, role, created_at)
-      VALUES (
-        'admin-sheila-2026',
-        'sheila',
-        '$scrypt$n=16384,r=8,p=1$f3df7ca6de33f7c4582e8f397c3d890b$3f7586893809d85166bcadf3b3a25c97db98625204e0f63e9ca33ce996d6ad836e657f31aead21fca61cd7a25f965f57e19c1b987a5218f00b0d0b7f6ae049d9',
-        'admin',
-        '2026-10-27T00:00:00.000Z'
-      );
-    `,
+    name: '002_reserved',
+    up: 'SELECT 1;',
   },
   {
     version: 3,
-    name: '003_enforce_sheila_admin_credentials',
+    name: '003_reserved',
+    up: 'SELECT 1;',
+  },
+  {
+    version: 4,
+    name: '004_plain_storage_no_crypto',
     up: `
-      INSERT INTO admin_users (id, username, password_hash, role, created_at)
-      VALUES (
-        'admin-sheila-2026',
-        'sheila',
-        '$scrypt$n=16384,r=8,p=1$f3df7ca6de33f7c4582e8f397c3d890b$3f7586893809d85166bcadf3b3a25c97db98625204e0f63e9ca33ce996d6ad836e657f31aead21fca61cd7a25f965f57e19c1b987a5218f00b0d0b7f6ae049d9',
-        'admin',
-        '2026-10-27T00:00:00.000Z'
-      )
-      ON CONFLICT(username) DO UPDATE SET
-        password_hash = excluded.password_hash,
-        role = 'admin',
-        disabled_at = NULL;
+      ALTER TABLE admin_users DROP COLUMN password_hash;
+      ALTER TABLE admin_sessions RENAME COLUMN token_hash TO token;
+      ALTER TABLE licenses RENAME COLUMN code_hash TO code;
+      ALTER TABLE licenses RENAME COLUMN installation_credential_hash TO installation_credential;
+      DELETE FROM admin_users WHERE id = 'admin-sheila-2026'
+        AND id NOT IN (SELECT created_by FROM licenses)
+        AND id NOT IN (SELECT actor_id FROM audit_logs WHERE actor_id IS NOT NULL);
     `,
   },
 ];

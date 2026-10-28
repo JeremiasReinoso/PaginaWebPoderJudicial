@@ -41,7 +41,11 @@ function walkFiles(dir) {
     const full = path.join(dir, entry.name);
     if (entry.isSymbolicLink()) continue;
     if (entry.isDirectory()) {
-      if (entry.name === 'node_modules' || entry.name === '__pycache__')
+      if (
+        entry.name === 'node_modules' ||
+        entry.name === '__pycache__' ||
+        entry.name === 'private'
+      )
         continue;
       out.push(...walkFiles(full));
     } else if (entry.isFile()) {

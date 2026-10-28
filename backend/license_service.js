@@ -1,7 +1,7 @@
 /** License validation domain service: single-use codes, atomic activation, permanence, and audit. */
-import crypto from 'node:crypto';
 import { CampusError } from './errors.js';
-import { sha256Hex, recordAudit } from './admin_auth.js';
+import { recordAudit } from './admin_auth.js';
+import { randomHex, randomId } from './random_ids.js';
 
 export const LICENSE_STATUS = Object.freeze({
   AVAILABLE: 'available',
@@ -14,7 +14,7 @@ export const LICENSE_STATUS = Object.freeze({
  * PJ-XXXX-XXXX-XXXX-XXXX-XXXX-XXXX-XXXX-XXXX-XXXX-XXXX (40 hex chars = 160 bits)
  */
 export function generateLicenseCode() {
-  const hex = crypto.randomBytes(20).toString('hex').toUpperCase();
+  const hex = randomHex(40);
   const groups = [];
   for (let i = 0; i < hex.length; i += 4) {
     groups.push(hex.slice(i, i + 4));
@@ -33,30 +33,16 @@ export function normalizeLicenseCode(rawCode) {
   return cleaned;
 }
 
-export function signInstallationToken(installationId, credential, secret) {
-  const payload = `${installationId}.${credential}`;
-  const signature = crypto
-    .createHmac('sha256', String(secret))
-    .update(payload, 'utf8')
-    .digest('base64url');
-  return `${payload}.${signature}`;
+/** Credencial de instalación: `<installationId>.<credencial>` (se compara tal cual con la guardada). */
+export function makeInstallationToken(installationId, credential) {
+  return `${installationId}.${credential}`;
 }
 
-export function verifySignedInstallationToken(token, secret) {
+export function parseInstallationToken(token) {
   if (typeof token !== 'string' || !token) return null;
   const parts = token.split('.');
-  if (parts.length !== 3) return null;
-  const [installationId, credential, signature] = parts;
-  const expectedSig = crypto
-    .createHmac('sha256', String(secret))
-    .update(`${installationId}.${credential}`, 'utf8')
-    .digest('base64url');
-  const sigBuf = Buffer.from(signature, 'utf8');
-  const expBuf = Buffer.from(expectedSig, 'utf8');
-  if (sigBuf.length !== expBuf.length || !crypto.timingSafeEqual(sigBuf, expBuf)) {
-    return null;
-  }
-  return { installationId, credential };
+  if (parts.length !== 2 || !parts[0] || !parts[1]) return null;
+  return { installationId: parts[0], credential: parts[1] };
 }
 
 /**
@@ -76,19 +62,18 @@ export function createLicense(
 
   const { code, prefix } = generateLicenseCode();
   const normalized = normalizeLicenseCode(code);
-  const codeHash = sha256Hex(normalized);
-  const id = crypto.randomUUID();
+  const id = randomId();
   const createdAt = new Date().toISOString();
 
   try {
     store.withDb((db) => {
       db.exec('BEGIN IMMEDIATE');
       db.prepare(
-        `INSERT INTO licenses(id, code_hash, code_prefix, client_reference, status, created_at, created_by)
+        `INSERT INTO licenses(id, code, code_prefix, client_reference, status, created_at, created_by)
          VALUES(?, ?, ?, ?, ?, ?, ?)`,
       ).run(
         id,
-        codeHash,
+        normalized,
         prefix,
         cleanRef,
         LICENSE_STATUS.AVAILABLE,
@@ -128,7 +113,7 @@ export function createLicense(
 
 /**
  * Atomically activates a single-use license and associates it permanently with an installation.
- * Supports idempotent recovery ONLY if the same installation presents its valid cryptographic credential.
+ * Supports idempotent recovery ONLY if the same installation presents its valid installation credential.
  */
 export function activateLicense(
   store,
@@ -142,7 +127,6 @@ export function activateLicense(
 ) {
   const windowSec = config.rateLimitWindowSeconds || 900;
   const maxAttempts = config.maxActivationAttempts || 6;
-  const secret = config.installationSecret || 'default-secret';
 
   if (typeof code !== 'string' || !code.trim()) {
     throw new CampusError(400, 'Ingresá un código de licencia válido.');
@@ -152,7 +136,7 @@ export function activateLicense(
     typeof installationId === 'string' &&
     /^[a-zA-Z0-9_-]{8,80}$/.test(installationId.trim())
       ? installationId.trim()
-      : `inst_${crypto.randomBytes(16).toString('hex')}`;
+      : `inst_${randomHex(32).toLowerCase()}`;
 
   const normalized = normalizeLicenseCode(code);
   const now = Date.now() / 1000;
@@ -197,7 +181,7 @@ export function activateLicense(
           `INSERT INTO license_activations(id, license_id, installation_id, activated_at, activation_result, metadata)
            VALUES(?, NULL, ?, ?, 'rejected_invalid_format', ?)`,
         ).run(
-          crypto.randomUUID(),
+          randomId(),
           requestedInstallationId,
           nowIso,
           JSON.stringify({ reason: 'invalid_format' }),
@@ -209,10 +193,9 @@ export function activateLicense(
         return;
       }
 
-      const codeHash = sha256Hex(normalized);
       const license = db
-        .prepare('SELECT * FROM licenses WHERE code_hash = ?')
-        .get(codeHash);
+        .prepare('SELECT * FROM licenses WHERE code = ?')
+        .get(normalized);
 
       if (!license) {
         db.prepare(
@@ -222,7 +205,7 @@ export function activateLicense(
           `INSERT INTO license_activations(id, license_id, installation_id, activated_at, activation_result, metadata)
            VALUES(?, NULL, ?, ?, 'rejected_not_found', ?)`,
         ).run(
-          crypto.randomUUID(),
+          randomId(),
           requestedInstallationId,
           nowIso,
           JSON.stringify({ reason: 'unknown_code' }),
@@ -246,7 +229,7 @@ export function activateLicense(
           `INSERT INTO license_activations(id, license_id, installation_id, activated_at, activation_result, metadata)
            VALUES(?, ?, ?, ?, 'rejected_revoked', ?)`,
         ).run(
-          crypto.randomUUID(),
+          randomId(),
           license.id,
           requestedInstallationId,
           nowIso,
@@ -272,23 +255,19 @@ export function activateLicense(
       if (license.status === LICENSE_STATUS.ACTIVATED) {
         // Check if this is an idempotent retry from the exact same authorized installation
         // holding the valid server-issued installation credential.
-        const parsedCred = verifySignedInstallationToken(
-          existingCredential,
-          secret,
-        );
+        const parsedCred = parseInstallationToken(existingCredential);
         const isSameAuthorizedInstallation =
           parsedCred &&
           parsedCred.installationId === license.installation_id &&
-          license.installation_credential_hash &&
-          sha256Hex(parsedCred.credential) ===
-            license.installation_credential_hash;
+          license.installation_credential &&
+          parsedCred.credential === license.installation_credential;
 
         if (isSameAuthorizedInstallation) {
           db.prepare(
             `INSERT INTO license_activations(id, license_id, installation_id, activated_at, activation_result, metadata)
              VALUES(?, ?, ?, ?, 'idempotent_recovery', ?)`,
           ).run(
-            crypto.randomUUID(),
+            randomId(),
             license.id,
             license.installation_id,
             nowIso,
@@ -312,7 +291,7 @@ export function activateLicense(
           `INSERT INTO license_activations(id, license_id, installation_id, activated_at, activation_result, metadata)
            VALUES(?, ?, ?, ?, 'rejected_already_used', ?)`,
         ).run(
-          crypto.randomUUID(),
+          randomId(),
           license.id,
           requestedInstallationId,
           nowIso,
@@ -342,11 +321,10 @@ export function activateLicense(
         )
         .get(requestedInstallationId, license.id);
       const finalInstallationId = existingInst
-        ? `inst_${crypto.randomBytes(16).toString('hex')}`
+        ? `inst_${randomHex(32).toLowerCase()}`
         : requestedInstallationId;
 
-      const rawCredential = crypto.randomBytes(32).toString('base64url');
-      const credentialHash = sha256Hex(rawCredential);
+      const rawCredential = randomHex(48).toLowerCase();
 
       const updateResult = db
         .prepare(
@@ -354,10 +332,10 @@ export function activateLicense(
            SET status = 'activated',
                activated_at = ?,
                installation_id = ?,
-               installation_credential_hash = ?
+               installation_credential = ?
            WHERE id = ? AND status = 'available'`,
         )
-        .run(nowIso, finalInstallationId, credentialHash, license.id);
+        .run(nowIso, finalInstallationId, rawCredential, license.id);
 
       if (updateResult.changes !== 1) {
         failureError = new CampusError(
@@ -371,7 +349,7 @@ export function activateLicense(
         `INSERT INTO license_activations(id, license_id, installation_id, activated_at, activation_result, metadata)
          VALUES(?, ?, ?, ?, 'activated', ?)`,
       ).run(
-        crypto.randomUUID(),
+        randomId(),
         license.id,
         finalInstallationId,
         nowIso,
@@ -389,10 +367,9 @@ export function activateLicense(
         },
       });
 
-      const signedToken = signInstallationToken(
+      const signedToken = makeInstallationToken(
         finalInstallationId,
         rawCredential,
-        secret,
       );
 
       activationResponse = {
@@ -419,16 +396,15 @@ export function activateLicense(
 }
 
 /**
- * Verifies in the database whether the installation credential corresponds to an active, non-revoked license.
- * Never trusts localStorage alone; requires the signed cryptographic credential matching the database hash.
+ * Verifica en la base de datos que la credencial de instalación corresponda a una licencia activada y no revocada.
+ * No se confía en localStorage: se compara con la credencial guardada en el servidor.
  */
 export function verifyInstallationStatus(
   store,
   installationToken,
   config = {},
 ) {
-  const secret = config.installationSecret || 'default-secret';
-  const parsed = verifySignedInstallationToken(installationToken, secret);
+  const parsed = parseInstallationToken(installationToken);
   if (!parsed) {
     return { activated: false };
   }
@@ -437,7 +413,7 @@ export function verifyInstallationStatus(
     return store.withDb((db) => {
       const license = db
         .prepare(
-          `SELECT id, code_prefix, client_reference, status, activated_at, installation_id, installation_credential_hash
+          `SELECT id, code_prefix, client_reference, status, activated_at, installation_id, installation_credential
            FROM licenses
            WHERE installation_id = ?`,
         )
@@ -446,23 +422,12 @@ export function verifyInstallationStatus(
       if (
         !license ||
         license.status !== LICENSE_STATUS.ACTIVATED ||
-        !license.installation_credential_hash
+        !license.installation_credential
       ) {
         return { activated: false };
       }
 
-      const candidateHash = Buffer.from(
-        sha256Hex(parsed.credential),
-        'utf8',
-      );
-      const storedHash = Buffer.from(
-        license.installation_credential_hash,
-        'utf8',
-      );
-      if (
-        candidateHash.length !== storedHash.length ||
-        !crypto.timingSafeEqual(candidateHash, storedHash)
-      ) {
+      if (parsed.credential !== license.installation_credential) {
         return { activated: false };
       }
 
@@ -512,7 +477,7 @@ export function revokeLicense(
        SET status = 'revoked',
            revoked_at = ?,
            revoked_by = ?,
-           installation_credential_hash = NULL
+           installation_credential = NULL
        WHERE id = ?`,
     ).run(nowIso, adminId, licenseId);
 
@@ -550,8 +515,7 @@ export function replaceLostUnusedLicense(store, { licenseId, adminId }) {
   const nowIso = new Date().toISOString();
   const { code, prefix } = generateLicenseCode();
   const normalized = normalizeLicenseCode(code);
-  const codeHash = sha256Hex(normalized);
-  const newId = crypto.randomUUID();
+  const newId = randomId();
 
   return store.withDb((db) => {
     db.exec('BEGIN IMMEDIATE');
@@ -575,11 +539,11 @@ export function replaceLostUnusedLicense(store, { licenseId, adminId }) {
     ).run(nowIso, adminId, licenseId);
 
     db.prepare(
-      `INSERT INTO licenses(id, code_hash, code_prefix, client_reference, status, created_at, created_by)
+      `INSERT INTO licenses(id, code, code_prefix, client_reference, status, created_at, created_by)
        VALUES(?, ?, ?, ?, 'available', ?, ?)`,
     ).run(
       newId,
-      codeHash,
+      normalized,
       prefix,
       oldLicense.client_reference,
       nowIso,
@@ -614,7 +578,7 @@ export function replaceLostUnusedLicense(store, { licenseId, adminId }) {
 }
 
 /**
- * Lists and filters licenses, statistics, and audit history without exposing sensitive hashes.
+ * Lists and filters licenses, statistics, and audit history without exposing codes.
  */
 export function queryLicensesAdmin(
   store,
@@ -716,7 +680,7 @@ export function queryLicensesAdmin(
 }
 
 /**
- * Exports administrative license listing without password hashes, code hashes, secrets, or tokens.
+ * Exports administrative license listing without codes, credentials, or tokens.
  */
 export function exportLicensesReport(store, format = 'json') {
   const { licenses } = queryLicensesAdmin(store, { limit: 500 });

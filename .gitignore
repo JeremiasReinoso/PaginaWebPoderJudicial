@@ -14,3 +14,6 @@ acceso-prueba.txt
 codigo-*.txt
 credenciales-*.txt
 dist/
+
+# Archivo oculto con usuario y contraseña del panel de licencias
+backend/private/

@@ -107,9 +107,7 @@
             <h2 id="create-license-heading">Crear nueva licencia</h2>
             <p class="small">
               El código completo se mostrará únicamente en el momento de su
-              creación. En la base de datos solo se almacena su huella
-              criptográfica SHA-256.
-            </p>
+              creación; después solo se consulta por su prefijo.</p>
             <form id="create-license-form">
               <label class="form-field" for="client-reference-input">
                 Cliente o referencia interna (opcional)
@@ -160,8 +158,8 @@
             <h2 id="export-heading">Exportar listado administrativo</h2>
             <p class="small">
               Descargá el padrón de licencias con sus estados, fechas e
-              instalaciones asociadas. La exportación excluye hashes, secretos y
-              tokens de sesión.
+              instalaciones asociadas. La exportación no incluye los códigos ni las
+              credenciales de instalación.
             </p>
             <div class="button-row" style="margin-top: 18px">
               <a

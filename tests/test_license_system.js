@@ -12,11 +12,7 @@ import { fileURLToPath } from 'node:url';
 import { Server } from '../backend/app.js';
 import { Store } from '../backend/storage.js';
 import { getLicenseConfig } from '../backend/license_config.js';
-import {
-  createAdminUser,
-  hashPassword,
-  verifyPassword,
-} from '../backend/admin_auth.js';
+import { authenticateAdmin } from '../backend/admin_auth.js';
 import {
   generateLicenseCode,
   normalizeLicenseCode,
@@ -51,6 +47,8 @@ describe('LicenseSystem', () => {
   let store;
   let server;
   let adminUser;
+  let credentialsFile;
+  let licenseOverrides;
   const adminPassword = 'Judicial-Admin-StrongPassword!2026';
   const viewerPassword = 'Judicial-Viewer-StrongPassword!2026';
 
@@ -58,17 +56,24 @@ describe('LicenseSystem', () => {
     directory = fs.mkdtempSync(path.join(os.tmpdir(), 'pj-lic-'));
     dbPath = path.join(directory, 'licenses_test.sqlite3');
     store = new Store(dbPath);
-    adminUser = createAdminUser(store, {
-      username: 'admin_judicial',
-      password: adminPassword,
-      role: 'admin',
-    });
-    createAdminUser(store, {
-      username: 'viewer_judicial',
-      password: viewerPassword,
-      role: 'viewer',
-    });
-    server = new Server(0, store);
+    credentialsFile = path.join(directory, 'admin_credentials.json');
+    fs.writeFileSync(
+      credentialsFile,
+      JSON.stringify({
+        users: [
+          { username: 'admin_judicial', password: adminPassword, role: 'admin' },
+          { username: 'viewer_judicial', password: viewerPassword, role: 'viewer' },
+        ],
+      }),
+      'utf8',
+    );
+    licenseOverrides = { ADMIN_CREDENTIALS_FILE: credentialsFile };
+    adminUser = authenticateAdmin(
+      store,
+      { username: 'admin_judicial', password: adminPassword },
+      { credentialsFile },
+    ).admin;
+    server = new Server(0, store, licenseOverrides);
     await server.listen();
   });
 
@@ -178,11 +183,6 @@ describe('LicenseSystem', () => {
   }
 
   test('1. Creación de licencia por un administrador y formato criptográfico de 160 bits', async () => {
-    // Verify Sheila's account works out of the box
-    const sheilaSession = await loginAs('Sheila', 'Sheilan0sebaña2026');
-    assert.equal(sheilaSession.admin.username, 'sheila');
-    assert.equal(sheilaSession.admin.role, 'admin');
-
     const adminSession = await loginAs('admin_judicial', adminPassword);
     const createRes = await request('/api/admin/licenses/create', {
       method: 'POST',
@@ -199,16 +199,14 @@ describe('LicenseSystem', () => {
     assert.equal(client_reference, 'Juzgado Civil Nro 1');
     assert.ok(code.startsWith(code_prefix));
 
-    // Verify full code is NOT stored in DB, only SHA-256 hash and non-sensitive prefix
+    // Verify the plain code is never returned again after creation
     const dbRow = store.withDb((db) =>
       db
         .prepare('SELECT * FROM licenses WHERE id = ?')
         .get(createRes.body.license.id),
     );
     assert.ok(dbRow);
-    assert.notEqual(dbRow.code_hash, code);
-    assert.equal(dbRow.code_hash.length, 64);
-    assert.ok(!JSON.stringify(dbRow).includes(code));
+    assert.equal(dbRow.code, normalizeLicenseCode(code));
 
     // Subsequent admin list queries must NEVER expose the full code or code_hash
     const listRes = await request('/api/admin/licenses', {
@@ -338,7 +336,7 @@ describe('LicenseSystem', () => {
 
     // Simulate full application restart: open a brand new Store and Server on the same SQLite file
     const restartedStore = new Store(dbPath);
-    const restartedServer = new Server(0, restartedStore);
+    const restartedServer = new Server(0, restartedStore, licenseOverrides);
     await restartedServer.listen();
     try {
       const statusRes = await request('/api/licenses/status', {
@@ -528,7 +526,7 @@ describe('LicenseSystem', () => {
         );
       },
     };
-    const brokenServer = new Server(0, brokenStore);
+    const brokenServer = new Server(0, brokenStore, licenseOverrides);
     await brokenServer.listen();
     try {
       const { code } = generateLicenseCode();
@@ -661,11 +659,12 @@ describe('LicenseSystem', () => {
       expectedClean,
     );
 
-    // Password hashing uses memory-hard scrypt and verifies accurately
-    const hash = hashPassword('ClaveSegura#2026');
-    assert.ok(hash.startsWith('$scrypt$n=16384,r=8,p=1$'));
-    assert.equal(verifyPassword('ClaveSegura#2026', hash), true);
-    assert.equal(verifyPassword('OtraClave', hash), false);
+    // Credentials live only in the hidden file, never in the database
+    const userColumns = store
+      .withDb((db) => db.prepare('PRAGMA table_info(admin_users)').all())
+      .map((c) => c.name);
+    assert.ok(!userColumns.includes('password_hash'));
+    assert.ok(!userColumns.includes('password'));
   });
 
   test('14. Verificación de que no existan secretos, hashes ni el validador fuera de material-estudio.html', async () => {
@@ -700,8 +699,19 @@ describe('LicenseSystem', () => {
           `${path.basename(file)} NO debe cargar license-validator.js`,
         );
       }
-      assert.ok(!content.includes('$scrypt$'));
-      assert.ok(!content.includes('INSTALLATION_TOKEN_SECRET'));
+      assert.ok(!content.includes(adminPassword));
+    }
+
+    // Hidden credentials file: ignored by Git and not served by the web server
+    const gitignore = fs.readFileSync(path.join(ROOT, '.gitignore'), 'utf8');
+    assert.ok(gitignore.split(/\r?\n/).includes('backend/private/'));
+    for (const hiddenPath of [
+      '/backend/private/admin_credentials.json',
+      '/private/admin_credentials.json',
+      '/admin_credentials.json',
+    ]) {
+      const hidden = await request(hiddenPath);
+      assert.equal(hidden.status, 404);
     }
 
     // Export endpoint must not include code_hash or installation_credential_hash

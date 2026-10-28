@@ -1,58 +1,55 @@
-/** Administrative authentication, memory-hard password hashing, sessions, RBAC, and audit logging. */
-import crypto from 'node:crypto';
+/** Autenticación del panel administrativo: usuario y contraseña desde un archivo oculto, sesiones, roles y auditoría. */
+import fs from 'node:fs';
 import { CampusError } from './errors.js';
+import { randomHex, randomId } from './random_ids.js';
 
-const SCRYPT_PARAMS = { N: 16384, r: 8, p: 1, maxmem: 32 * 1024 * 1024 };
-const KEYLEN = 64;
+const ROLES = ['admin', 'auditor', 'viewer'];
 
-export function hashPassword(password) {
-  if (typeof password !== 'string' || password.length < 10 || password.length > 256) {
+function norm(value) {
+  return String(value).normalize('NFC');
+}
+
+/**
+ * Lee las credenciales desde el archivo oculto (`backend/private/admin_credentials.json`).
+ * Formato: { "users": [ { "username": "...", "password": "...", "role": "admin" } ] }
+ */
+export function loadAdminCredentials(credentialsFile) {
+  let parsed;
+  try {
+    parsed = JSON.parse(fs.readFileSync(credentialsFile, 'utf8'));
+  } catch {
     throw new CampusError(
-      400,
-      'La contraseña administrativa debe tener entre 10 y 256 caracteres.',
+      503,
+      'El acceso administrativo no está configurado en este servidor.',
     );
   }
-  const salt = crypto.randomBytes(16).toString('hex');
-  const derived = crypto
-    .scryptSync(password, salt, KEYLEN, SCRYPT_PARAMS)
-    .toString('hex');
-  return `$scrypt$n=${SCRYPT_PARAMS.N},r=${SCRYPT_PARAMS.r},p=${SCRYPT_PARAMS.p}$${salt}$${derived}`;
+  const list = Array.isArray(parsed?.users) ? parsed.users : [];
+  return list
+    .filter(
+      (u) =>
+        u &&
+        typeof u.username === 'string' &&
+        typeof u.password === 'string' &&
+        u.username.trim() &&
+        u.password,
+    )
+    .map((u) => ({
+      username: norm(u.username.trim()).toLowerCase(),
+      displayName: norm(u.username.trim()),
+      password: norm(u.password),
+      role: ROLES.includes(u.role) ? u.role : 'admin',
+    }));
 }
 
-export function verifyPassword(password, storedHash) {
-  if (typeof password !== 'string' || typeof storedHash !== 'string') {
-    return false;
-  }
-  const parts = storedHash.split('$');
-  if (parts.length !== 5 || parts[1] !== 'scrypt') return false;
-  const salt = parts[3];
-  const expectedHex = parts[4];
-  try {
-    const candidates = new Set([password, password.normalize('NFC'), password.normalize('NFD')]);
-    const expected = Buffer.from(expectedHex, 'hex');
-    let ok = false;
-    for (const candidate of candidates) {
-      const derived = crypto.scryptSync(candidate, salt, KEYLEN, SCRYPT_PARAMS);
-      if (derived.length === expected.length && crypto.timingSafeEqual(derived, expected)) {
-        ok = true;
-      }
-    }
-    return ok;
-  } catch {
-    return false;
-  }
-}
-
-export function sha256Hex(value) {
-  return crypto.createHash('sha256').update(String(value), 'utf8').digest('hex');
-}
-
-export function recordAudit(db, { actorId = null, action, entityType, entityId = null, metadata = {} }) {
+export function recordAudit(
+  db,
+  { actorId = null, action, entityType, entityId = null, metadata = {} },
+) {
   db.prepare(
     `INSERT INTO audit_logs(id, actor_id, action, entity_type, entity_id, timestamp, metadata)
      VALUES(?, ?, ?, ?, ?, ?, ?)`,
   ).run(
-    crypto.randomUUID(),
+    randomId(),
     actorId,
     action,
     entityType,
@@ -60,51 +57,6 @@ export function recordAudit(db, { actorId = null, action, entityType, entityId =
     new Date().toISOString(),
     JSON.stringify(metadata),
   );
-}
-
-export function createAdminUser(
-  store,
-  { username, password, role = 'admin', actorId = null },
-) {
-  if (
-    typeof username !== 'string' ||
-    !/^[a-zA-Z0-9_.-]{3,60}$/.test(username.trim())
-  ) {
-    throw new CampusError(
-      400,
-      'Nombre de usuario inválido (3 a 60 caracteres alfanuméricos).',
-    );
-  }
-  if (!['admin', 'auditor', 'viewer'].includes(role)) {
-    throw new CampusError(400, 'Rol administrativo inválido.');
-  }
-  const normalizedUsername = username.trim().toLowerCase();
-  const passwordHash = hashPassword(password);
-  const id = crypto.randomUUID();
-  const nowIso = new Date().toISOString();
-
-  store.withDb((db) => {
-    db.exec('BEGIN IMMEDIATE');
-    const existing = db
-      .prepare('SELECT id FROM admin_users WHERE username = ?')
-      .get(normalizedUsername);
-    if (existing) {
-      throw new CampusError(409, 'El usuario administrativo ya existe.');
-    }
-    db.prepare(
-      `INSERT INTO admin_users(id, username, password_hash, role, created_at)
-       VALUES(?, ?, ?, ?, ?)`,
-    ).run(id, normalizedUsername, passwordHash, role, nowIso);
-    recordAudit(db, {
-      actorId: actorId || id,
-      action: 'ADMIN_USER_CREATED',
-      entityType: 'AdminUsers',
-      entityId: id,
-      metadata: { username: normalizedUsername, role },
-    });
-  });
-
-  return { id, username: normalizedUsername, role, created_at: nowIso };
 }
 
 export function authenticateAdmin(
@@ -126,7 +78,8 @@ export function authenticateAdmin(
     throw new CampusError(400, 'Ingresá usuario y contraseña administrativos.');
   }
 
-  const normalizedUsername = username.trim().toLowerCase();
+  const users = loadAdminCredentials(config.credentialsFile);
+  const normalizedUsername = norm(username.trim()).toLowerCase();
   const now = Date.now() / 1000;
   const nowIso = new Date().toISOString();
   let failureError = null;
@@ -134,9 +87,9 @@ export function authenticateAdmin(
 
   store.withDb((db) => {
     db.exec('BEGIN IMMEDIATE');
-    db.prepare(
-      'DELETE FROM license_rate_limits WHERE attempted_at < ?',
-    ).run(now - windowSec);
+    db.prepare('DELETE FROM license_rate_limits WHERE attempted_at < ?').run(
+      now - windowSec,
+    );
 
     const failCount = db
       .prepare(
@@ -147,10 +100,8 @@ export function authenticateAdmin(
 
     if (failCount >= maxAttempts) {
       recordAudit(db, {
-        actorId: null,
         action: 'ADMIN_LOGIN_RATE_LIMITED',
         entityType: 'AdminUsers',
-        entityId: null,
         metadata: { username: normalizedUsername },
       });
       failureError = new CampusError(
@@ -160,15 +111,10 @@ export function authenticateAdmin(
       return;
     }
 
-    const user = db
-      .prepare('SELECT * FROM admin_users WHERE username = ?')
-      .get(normalizedUsername);
+    const account = users.find((u) => u.username === normalizedUsername);
+    const valid = Boolean(account) && account.password === norm(password);
 
-    const passwordValid = user
-      ? verifyPassword(password, user.password_hash)
-      : false;
-
-    if (!user || !passwordValid || user.disabled_at) {
+    if (!valid) {
       db.prepare(
         'INSERT INTO license_rate_limits(scope, identifier, attempted_at) VALUES(?, ?, ?)',
       ).run('admin_login', ipAddress, now);
@@ -176,15 +122,13 @@ export function authenticateAdmin(
         'INSERT INTO license_rate_limits(scope, identifier, attempted_at) VALUES(?, ?, ?)',
       ).run('admin_login', normalizedUsername, now);
       recordAudit(db, {
-        actorId: user ? user.id : null,
         action: 'ADMIN_LOGIN_FAILED',
         entityType: 'AdminUsers',
-        entityId: user ? user.id : null,
         metadata: { username: normalizedUsername },
       });
       failureError = new CampusError(
         401,
-        'Credenciales administrativas inválidas o cuenta deshabilitada.',
+        'Credenciales administrativas inválidas.',
       );
       return;
     }
@@ -194,32 +138,29 @@ export function authenticateAdmin(
        WHERE scope = 'admin_login' AND (identifier = ? OR identifier = ?)`,
     ).run(ipAddress, normalizedUsername);
 
-    db.prepare('UPDATE admin_users SET last_login_at = ? WHERE id = ?').run(
-      nowIso,
-      user.id,
-    );
+    // Registro del usuario en la base (solo identificación; la contraseña no se guarda).
+    const adminId = `admin-${account.username}`;
+    db.prepare(
+      `INSERT INTO admin_users(id, username, role, created_at, last_login_at)
+       VALUES(?, ?, ?, ?, ?)
+       ON CONFLICT(username) DO UPDATE SET role = excluded.role, last_login_at = excluded.last_login_at`,
+    ).run(adminId, account.username, account.role, nowIso, nowIso);
+    const user = db
+      .prepare('SELECT id, username, role FROM admin_users WHERE username = ?')
+      .get(account.username);
 
-    // Clean expired admin sessions
     db.prepare(
       'DELETE FROM admin_sessions WHERE expires_at < ? OR touched_at < ?',
     ).run(now, now - idleSec);
 
-    const rawToken = crypto.randomBytes(32).toString('base64url');
-    const csrfToken = crypto.randomBytes(32).toString('base64url');
-    const sessionId = crypto.randomUUID();
+    const rawToken = randomHex(48);
+    const csrfToken = randomHex(48);
+    const sessionId = randomId();
 
     db.prepare(
-      `INSERT INTO admin_sessions(id, token_hash, csrf_token, admin_id, created_at, touched_at, expires_at)
+      `INSERT INTO admin_sessions(id, token, csrf_token, admin_id, created_at, touched_at, expires_at)
        VALUES(?, ?, ?, ?, ?, ?, ?)`,
-    ).run(
-      sessionId,
-      sha256Hex(rawToken),
-      csrfToken,
-      user.id,
-      now,
-      now,
-      now + maxSessionSec,
-    );
+    ).run(sessionId, rawToken, csrfToken, user.id, now, now, now + maxSessionSec);
 
     recordAudit(db, {
       actorId: user.id,
@@ -234,7 +175,7 @@ export function authenticateAdmin(
       csrf: csrfToken,
       admin: {
         id: user.id,
-        username: user.username,
+        username: account.displayName,
         role: user.role,
       },
     };
@@ -247,7 +188,6 @@ export function authenticateAdmin(
 export function findAdminSession(store, rawToken, config = {}) {
   if (!rawToken || typeof rawToken !== 'string') return null;
   const idleSec = config.adminSessionIdleSeconds || 1800;
-  const tokenHash = sha256Hex(rawToken);
   const now = Date.now() / 1000;
 
   return store.withDb((db) => {
@@ -256,9 +196,9 @@ export function findAdminSession(store, rawToken, config = {}) {
         `SELECT s.*, u.username, u.role, u.disabled_at
          FROM admin_sessions s
          JOIN admin_users u ON u.id = s.admin_id
-         WHERE s.token_hash = ?`,
+         WHERE s.token = ?`,
       )
-      .get(tokenHash);
+      .get(rawToken);
     if (!row) return null;
     const expired =
       Boolean(row.revoked_at) ||
@@ -275,7 +215,6 @@ export function findAdminSession(store, rawToken, config = {}) {
     );
     return {
       sessionId: row.id,
-      tokenHash: row.token_hash,
       csrf: row.csrf_token,
       admin: {
         id: row.admin_id,
@@ -289,12 +228,7 @@ export function findAdminSession(store, rawToken, config = {}) {
 export function logoutAdminSession(store, session) {
   if (!session) return;
   store.withDb((db) => {
-    db.prepare(
-      'UPDATE admin_sessions SET revoked_at = ? WHERE id = ?',
-    ).run(new Date().toISOString(), session.sessionId);
-    db.prepare('DELETE FROM admin_sessions WHERE id = ?').run(
-      session.sessionId,
-    );
+    db.prepare('DELETE FROM admin_sessions WHERE id = ?').run(session.sessionId);
     recordAudit(db, {
       actorId: session.admin.id,
       action: 'ADMIN_LOGOUT',

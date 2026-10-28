@@ -68,6 +68,7 @@ function copyTreeFiltered(srcDir, destDir) {
     if (
       entry.name === '__pycache__' ||
       entry.name === '.gitkeep' ||
+      entry.name === 'private' ||
       entry.name.endsWith('.pyc')
     ) {
       continue;
@@ -123,10 +124,12 @@ export function build_friend(stateDir, runtime = null) {
     path.join(ROOT, 'frontend/access.html'),
     path.join(bundle, 'app/frontend/access.html'),
   );
-  fs.copyFileSync(
-    path.join(ROOT, 'package.json'),
-    path.join(bundle, 'package.json'),
-  );
+  if (fs.existsSync(path.join(ROOT, 'package.json'))) {
+    fs.copyFileSync(
+      path.join(ROOT, 'package.json'),
+      path.join(bundle, 'package.json'),
+    );
+  }
   build_public(path.join(bundle, 'app/frontend/public'));
 
   const privateDir = path.join(bundle, 'private');
