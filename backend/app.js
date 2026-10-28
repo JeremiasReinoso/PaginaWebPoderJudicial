@@ -456,11 +456,33 @@ export class Server {
 
     // --- Administrative Panel UI & Admin API Endpoints ---
     const adminPath = this.licenseConfig.adminPanelPath;
-    if (decodedPath === adminPath || decodedPath === `${adminPath}/`) {
+    if (
+      decodedPath === adminPath ||
+      decodedPath === `${adminPath}/` ||
+      decodedPath === '/admin' ||
+      decodedPath === '/admin/' ||
+      decodedPath === '/admin/index.html'
+    ) {
       const adminHtml = path.join(FRONTEND, 'admin/index.html');
       if (isRegularFile(adminHtml)) {
         return this.file(req, res, adminHtml);
       }
+    }
+    if (
+      decodedPath === '/admin.css' ||
+      decodedPath === '/admin/admin.css' ||
+      decodedPath === `${adminPath}/admin.css`
+    ) {
+      const cssFile = path.join(FRONTEND, 'admin/admin.css');
+      if (isRegularFile(cssFile)) return this.file(req, res, cssFile);
+    }
+    if (
+      decodedPath === '/admin.js' ||
+      decodedPath === '/admin/admin.js' ||
+      decodedPath === `${adminPath}/admin.js`
+    ) {
+      const jsFile = path.join(FRONTEND, 'admin/admin.js');
+      if (isRegularFile(jsFile)) return this.file(req, res, jsFile);
     }
     if (decodedPath.startsWith('/admin-assets/')) {
       const rel = decodedPath.slice('/admin-assets/'.length);
@@ -897,6 +919,5 @@ const isMain =
   path.resolve(process.argv[1]) ===
     path.resolve(fileURLToPath(import.meta.url));
 if (isMain) {
-  const { main } = await import('./cli.js');
-  await main();
+  import('./cli.js').then(({ main }) => main());
 }

@@ -16,7 +16,6 @@ export const DIRECTORIES = [
 ];
 export const ROOT_FILES = [
   'README.md',
-  'package.json',
   '.gitignore',
   '.gitattributes',
 ];

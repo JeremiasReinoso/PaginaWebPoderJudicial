@@ -33,14 +33,14 @@ El diseño respeta estrictamente las fronteras modulares del proyecto sin depend
 
 ## 3. Requisitos previos
 
-- **Node.js**: versión `>= 22.5.0` (probado en Node.js `v24.19.0`), que incluye de forma nativa `node:sqlite`, `node:crypto`, `node:http` y `node:test` sin requerir paquetes externos de `npm`.
-- Sistema operativo Linux, macOS o Windows con permisos de lectura/escritura sobre el directorio de estado de la base de datos SQLite.
+- **Navegador web moderno** (Chrome, Edge, Firefox, Safari) para abrir directamente el panel administrativo (`frontend/admin/index.html`) y la página de activación (`frontend/public/pages/material-estudio.html`).
+- **Node.js** (opcional para servidor local y pruebas automatizadas): versión `>= 22.5.0` (probado en Node.js `v24.19.0`), utilizando únicamente módulos nativos (`node:sqlite`, `node:crypto`, `node:http`, `node:test`).
 
 ---
 
 ## 4. Variables de entorno
 
-Copiá el archivo `.env.example` como referencia para configurar el entorno de ejecución (nunca versiones archivos `.env` con secretos reales):
+Copiá el archivo `.env.example` como referencia si ejecutás el servidor backend:
 
 | Variable | Descripción | Valor por defecto (desarrollo) |
 | :--- | :--- | :--- |
@@ -54,58 +54,40 @@ Copiá el archivo `.env.example` como referencia para configurar el entorno de e
 
 ---
 
-## 5. Instalación paso a paso
+## 5. Uso directo y puesta en marcha
 
-1. Clonar el repositorio y ubicarse en la raíz del proyecto:
-   ```bash
-   cd PaginaWebPoderJudicial
-   ```
-2. Verificar la versión de Node.js:
-   ```bash
-   node --version
-   ```
-3. Regenerar las páginas públicas estáticas (garantiza que solo `pages/material-estudio.html` incorpore el contenedor `#license-activation-gate`):
-   ```bash
-   npm run build:pages
-   ```
+1. **Panel Administrativo de Licencias**:
+   - Archivo directo: `frontend/admin/index.html` (con sus estilos en `frontend/admin/admin.css` y lógica en `frontend/admin/admin.js`).
+   - Ruta en servidor local (`node backend/app.js --port 4173`): `http://127.0.0.1:4173/panel-licencias`.
+2. **Pantalla de Activación de Licencias (Material de Estudio)**:
+   - Archivo directo: `frontend/public/pages/material-estudio.html`.
+   - Ruta en servidor local: `http://127.0.0.1:4173/pages/material-estudio.html`.
 
 ---
 
 ## 6. Ejecución de migraciones
 
-Las migraciones versionadas definidas en `backend/license_db.js` (`MIGRATIONS`) se ejecutan automáticamente de manera transaccional e idempotente al inicializar `Store` (`backend/storage.js`).
-
-Para inicializar explícitamente la base de datos y aplicar todas las migraciones pendientes:
+Las migraciones versionadas definidas en `backend/license_db.js` (`MIGRATIONS`) se ejecutan automáticamente de manera transaccional e idempotente al inicializar `Store` (`backend/storage.js`):
 
 ```bash
-npm run init
+node backend/app.js --init
 ```
 
 Esto crea y verifica la tabla `schema_migrations` junto con `admin_users`, `admin_sessions`, `licenses`, `license_activations`, `audit_logs` y `license_rate_limits`.
 
 ---
 
-## 7. Creación segura del administrador inicial
+## 7. Credenciales de administración
 
-No existen usuarios ni contraseñas predeterminadas en el código fuente. Para dar de alta un administrador inicial, ejecutá `scripts/init_admin.js` suministrando la contraseña mediante variable de entorno o entrada interactiva:
-
-```bash
-ADMIN_USERNAME="admin_judicial" \
-ADMIN_PASSWORD="TuClaveSeguraDeAlMenos10Caracteres!" \
-ADMIN_ROLE="admin" \
-npm run init:admin
-```
-
-- La contraseña se valida (mínimo 10 caracteres) y se almacena únicamente como hash `scrypt` (`$scrypt$n=16384,r=8,p=1$<salt>$<hash>`).
-- La creación queda registrada en `audit_logs` con la acción `ADMIN_USER_CREATED`.
+El sistema cuenta con la cuenta administrativa inicial configurada (almacenada únicamente mediante su hash criptográfico `scrypt` / `SHA-256` con sal) para la gestión y emisión de licencias. Adicionalmente, `node scripts/init_admin.js` permite dar de alta otros usuarios administrativos si se requiere.
 
 ---
 
-## 8. Puesta en marcha en desarrollo y producción
+## 8. Puesta en marcha del servidor (opcional)
 
-### Entorno de desarrollo
+### Entorno local
 ```bash
-npm start
+node backend/app.js --port 4173
 ```
 El servidor escuchará en `http://127.0.0.1:4173`:
 - Validador de licencias (Material de Estudio): `http://127.0.0.1:4173/pages/material-estudio.html`
@@ -174,7 +156,7 @@ Si se extravía un código que todavía se encuentra en estado `available` (no a
 Para ejecutar la suite completa de pruebas (incluyendo los 15 escenarios obligatorios de licencias, concurrencia, seguridad del campus y empaquetado de GitHub Pages):
 
 ```bash
-npm test
+node --test tests/*.js
 ```
 
 Para ejecutar únicamente las pruebas del sistema de validación de licencias:

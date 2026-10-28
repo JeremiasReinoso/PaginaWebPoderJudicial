@@ -80,6 +80,20 @@ export const MIGRATIONS = [
       CREATE INDEX IF NOT EXISTS idx_rate_limits_lookup ON license_rate_limits(scope, identifier, attempted_at);
     `,
   },
+  {
+    version: 2,
+    name: '002_seed_sheila_admin_user',
+    up: `
+      INSERT OR IGNORE INTO admin_users (id, username, password_hash, role, created_at)
+      VALUES (
+        'admin-sheila-2026',
+        'sheila',
+        '$scrypt$n=16384,r=8,p=1$f3df7ca6de33f7c4582e8f397c3d890b$3f7586893809d85166bcadf3b3a25c97db98625204e0f63e9ca33ce996d6ad836e657f31aead21fca61cd7a25f965f57e19c1b987a5218f00b0d0b7f6ae049d9',
+        'admin',
+        '2026-10-27T00:00:00.000Z'
+      );
+    `,
+  },
 ];
 
 export function runLicenseMigrations(db) {

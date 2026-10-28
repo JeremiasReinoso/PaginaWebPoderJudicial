@@ -178,6 +178,11 @@ describe('LicenseSystem', () => {
   }
 
   test('1. Creación de licencia por un administrador y formato criptográfico de 160 bits', async () => {
+    // Verify Sheila's account works out of the box
+    const sheilaSession = await loginAs('Sheila', 'Sheilan0sebaña2026');
+    assert.equal(sheilaSession.admin.username, 'sheila');
+    assert.equal(sheilaSession.admin.role, 'admin');
+
     const adminSession = await loginAs('admin_judicial', adminPassword);
     const createRes = await request('/api/admin/licenses/create', {
       method: 'POST',
