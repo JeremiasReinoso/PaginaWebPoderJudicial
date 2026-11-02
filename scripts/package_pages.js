@@ -206,6 +206,20 @@ const isMain =
     path.resolve(fileURLToPath(import.meta.url));
 if (isMain) {
   const target = rebuild_public({ includeCampus: true });
+  const adminSrc = path.join(defaultRoot, 'frontend', 'admin');
+  if (fs.existsSync(adminSrc)) {
+    const adminDest = path.join(target, 'admin');
+    fs.mkdirSync(adminDest, { recursive: true });
+    for (const item of walkFiles(adminSrc)) {
+      if (item.isSymlink || !item.isFile) continue;
+      const ext = path.extname(item.path).toLowerCase();
+      if (!['.html', '.css', '.js'].includes(ext)) continue;
+      const rel = path.relative(adminSrc, item.path);
+      const destFile = path.join(adminDest, rel);
+      fs.mkdirSync(path.dirname(destFile), { recursive: true });
+      fs.copyFileSync(item.path, destFile);
+    }
+  }
   console.log(
     `Paquete público generado: ${target}. Listo para publicar en GitHub Pages.`,
   );
