@@ -1,7 +1,7 @@
 /**
  * Controlador de validación de licencias exclusivo para pages/material-estudio.html.
  * Funciona de forma 100% estática y autónoma en el navegador validando las credenciales
- * generadas en el panel administrativo (Sheila2026), y también se sincroniza con el
+ * generadas en el panel administrativo, y también se sincroniza con el
  * servidor local si estuviese activo.
  */
 (() => {
@@ -107,14 +107,19 @@
   }
 
   function computePanelSignature(hex32) {
-    const secret = 'MJ_PANEL_SHEILA_2026_AUTH_KEY';
-    const input = `${secret}:${String(hex32).toUpperCase()}`;
     let h1 = 0x811c9dc5;
+    let h2 = 0x1b873593;
+    const input = `PJ_MZA_2026_PANEL_${String(hex32).toUpperCase()}`;
     for (let i = 0; i < input.length; i += 1) {
-      h1 ^= input.charCodeAt(i);
+      const c = input.charCodeAt(i);
+      h1 ^= c;
       h1 = Math.imul(h1, 0x01000193) >>> 0;
+      h2 ^= c + i;
+      h2 = Math.imul(h2, 0x85ebca6b) >>> 0;
     }
-    return h1.toString(16).padStart(8, '0').toUpperCase();
+    const s1 = ((h1 >>> 0) & 0xffff).toString(16).toUpperCase().padStart(4, '0');
+    const s2 = ((h2 >>> 0) & 0xffff).toString(16).toUpperCase().padStart(4, '0');
+    return `${s1}${s2}`;
   }
 
   function hasValidPanelSignature(cleaned) {
@@ -268,7 +273,7 @@
         created_at: nowIso,
         activated_at: null,
         installation_id: null,
-        created_by_username: 'Sheila2026',
+        created_by_username: 'administrador',
         revoked_at: null,
       };
       store.licenses.unshift(license);
