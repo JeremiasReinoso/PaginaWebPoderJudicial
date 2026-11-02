@@ -703,7 +703,7 @@ const ORIGINAL_PDF_FILENAMES = {
 function computePanelSignature(hex32) {
   let h1 = 0x811c9dc5;
   let h2 = 0x1b873593;
-  const input = `PJ_SHEILA_2026_${hex32.toUpperCase()}`;
+  const input = `PJ_MZA_2026_PANEL_${String(hex32).toUpperCase()}`;
   for (let i = 0; i < input.length; i += 1) {
     const c = input.charCodeAt(i);
     h1 ^= c;
