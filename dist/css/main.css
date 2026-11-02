@@ -45,13 +45,16 @@ ul {
 
 
 :root {
-  --paper: #f7f9fc;
-  --white: #fff;
-  --ink: #101828;
-  --muted: #667085;
+  --paper: #0c1322;
+  --white: #f5f8ff;
+  --ink: #f1f5ff;
+  --muted: #b0bed5;
   --primary: #155eef;
-  --highlight: #dbe8ff;
-  --line: #dce2ec;
+  --highlight: #263f6b;
+  --line: #2b3a53;
+  --teal: #68dfce;
+  --violet: #c0a6ff;
+  --amber: #f3cb83;
   --serif: Georgia, 'Times New Roman', serif;
   --sans: 'Segoe UI', Arial, sans-serif;
   --radius: 16px;
@@ -2210,6 +2213,7 @@ dialog::backdrop {
     border-right: 1px solid #4866a0;
   }
 }
+
 @media (max-width: 540px) {
   .stats {
     border-radius: 0 0 10px 10px;
@@ -2221,6 +2225,9 @@ dialog::backdrop {
     padding: 20px 12px;
   }
 }
+
+
+
 
 
 [hidden] {
