@@ -692,13 +692,48 @@ function catalog(data) {
   };
 }
 
+const ORIGINAL_PDF_FILENAMES = {
+  1: 'Concurso-Ingreso-2026-SCJM-Modulo-1-Organizacion-del-Estado-Material-de-Estudio.pdf',
+  2: 'Concurso-Ingreso-2026-SCJM-Modulo-2-El-Poder-Judicial-de-Mendoza-Material-de-Estudio.pdf',
+  3: 'Concurso-Ingreso-2026-SCJM-Modulo-3-Derechos-Humanos-Material-de-Estudio.pdf',
+  4: 'Concurso-Ingreso-2026-SCJM-Modulo-4-Violencia-de-Genero-Material-de-Estudio.pdf',
+  5: 'Concurso-Ingreso-2026-SCJM-Modulo-5-Atencion-para-un-Servicio-de-Justicia-Material-de-Estudio-1.pdf',
+};
+
+function computePanelSignature(hex32) {
+  let h1 = 0x811c9dc5;
+  let h2 = 0x1b873593;
+  const input = `PJ_SHEILA_2026_${hex32.toUpperCase()}`;
+  for (let i = 0; i < input.length; i += 1) {
+    const c = input.charCodeAt(i);
+    h1 ^= c;
+    h1 = Math.imul(h1, 0x01000193) >>> 0;
+    h2 ^= c + i;
+    h2 = Math.imul(h2, 0x85ebca6b) >>> 0;
+  }
+  const s1 = ((h1 >>> 0) & 0xffff).toString(16).toUpperCase().padStart(4, '0');
+  const s2 = ((h2 >>> 0) & 0xffff).toString(16).toUpperCase().padStart(4, '0');
+  return `${s1}${s2}`;
+}
+
+function hasValidPanelSignature(cleaned) {
+  if (!/^PJ[0-9A-F]{40}$/.test(cleaned)) return false;
+  const body32 = cleaned.slice(2, 34);
+  const tail8 = cleaned.slice(34, 42);
+  return computePanelSignature(body32) === tail8;
+}
+
 function resolveBookUrls() {
   const urls = {};
+  const isSourceCampus =
+    typeof location !== 'undefined' &&
+    (location.protocol === 'file:' ||
+      String(location.pathname || '').includes('/frontend/campus/'));
   for (let i = 1; i <= 5; i += 1) {
-    urls[i] = new URL(
-      `../assets/pdfs-estudio/module-${i}.pdf`,
-      location.href,
-    ).href;
+    const rel = isSourceCampus
+      ? `../../assets%20/pdfs-estudio/${ORIGINAL_PDF_FILENAMES[i]}`
+      : `../assets/pdfs-estudio/module-${i}.pdf`;
+    urls[i] = new URL(rel, location.href).href;
   }
   return urls;
 }
@@ -725,20 +760,52 @@ export async function clientLogin(code) {
 
   // Soporte directo para códigos de licencia generados en el panel administrativo
   if (normalized.startsWith('PJ')) {
-    let store = null;
+    let store = { licenses: [], activations: [], auditLogs: [] };
     try {
       const raw = localStorage.getItem('mj_judicial_license_store_v1');
       if (raw) store = JSON.parse(raw);
     } catch {}
-    const lic = store?.licenses?.find((l) => {
-      const clean = l.clean || (l.code ? l.code.replace(/[-\s]/g, '').toUpperCase() : '');
+    store.licenses = store.licenses || [];
+    store.activations = store.activations || [];
+    store.auditLogs = store.auditLogs || [];
+
+    let lic = store.licenses.find((l) => {
+      const clean =
+        l.clean ||
+        (l.code ? l.code.replace(/[-\s]/g, '').toUpperCase() : '') ||
+        (l.fullCode ? l.fullCode.replace(/[-\s]/g, '').toUpperCase() : '');
       return clean === normalized;
     });
+
+    if (!lic && hasValidPanelSignature(normalized)) {
+      const chunks = [];
+      const body = normalized.slice(2);
+      for (let i = 0; i < 40; i += 4) {
+        chunks.push(body.slice(i, i + 4));
+      }
+      const formatted = `PJ-${chunks.join('-')}`;
+      const prefix = `PJ-${chunks[0]}-${chunks[1]}`;
+      lic = {
+        id: store.licenses.reduce((m, x) => Math.max(m, Number(x.id) || 0), 0) + 1,
+        code: formatted,
+        fullCode: formatted,
+        clean: normalized,
+        code_prefix: prefix,
+        prefix,
+        status: 'available',
+        client_name: '',
+        client: '',
+        notes: '',
+        created_at: new Date().toISOString(),
+        createdAt: new Date().toISOString(),
+      };
+      store.licenses.unshift(lic);
+    }
 
     if (!lic) {
       state.failures.push(now);
       saveState(state);
-      throw new Error('Código de licencia no encontrado o no habilitado en el panel.');
+      throw new Error('Código de licencia no encontrado o no habilitado en el panel administrativo.');
     }
 
     if (lic.status === 'revoked') {
@@ -747,26 +814,33 @@ export async function clientLogin(code) {
       throw new Error('La licencia ingresada ha sido revocada por administración.');
     }
 
-    const activatedAt = lic.activatedAt || new Date().toISOString();
-    const instId = lic.installationId || `inst_${randomHex(16)}`;
+    const activatedAt = lic.activated_at || lic.activatedAt || new Date().toISOString();
+    const instId = lic.installation_id || lic.installationId || `inst_${randomHex(8)}`;
+    const rawCredential = lic.installation_credential || randomHex(24);
     if (lic.status === 'available') {
       lic.status = 'activated';
+      lic.activated_at = activatedAt;
       lic.activatedAt = activatedAt;
+      lic.installation_id = instId;
       lic.installationId = instId;
-      store.activations = store.activations || [];
-      store.activations.push({
+      lic.installation_credential = rawCredential;
+      store.activations.unshift({
         id: store.activations.length + 1,
+        license_id: lic.id,
         licenseId: lic.id,
-        codePrefix: lic.prefix,
+        code_prefix: lic.code_prefix || lic.prefix,
+        codePrefix: lic.code_prefix || lic.prefix,
+        installation_id: instId,
         installationId: instId,
+        activated_at: activatedAt,
         activatedAt,
         ip: '127.0.0.1 (local browser)',
       });
-      store.auditLogs = store.auditLogs || [];
       store.auditLogs.unshift({
         id: store.auditLogs.length + 1,
         action: 'license_activated',
-        details: `Licencia ${lic.prefix} activada desde ingreso de estudiante`,
+        details: `Licencia ${lic.code_prefix || lic.prefix} activada desde ingreso de estudiante`,
+        admin_user: 'estudiante',
         adminUser: 'estudiante',
         timestamp: activatedAt,
       });
@@ -779,17 +853,11 @@ export async function clientLogin(code) {
     try {
       localStorage.setItem(
         'mj_judicial_installation_cred_v1',
-        JSON.stringify({
-          licenseId: lic.id,
-          token: `inst_${randomHex(32)}`,
-          code: lic.code,
-          client: lic.client || '',
-          activatedAt,
-        }),
+        `${instId}.${rawCredential}`,
       );
     } catch {}
 
-    const principal = `estudiante_${(lic.prefix || normalized.slice(0, 10)).replace(/[^A-Za-z0-9]/g, '')}`;
+    const principal = `estudiante_${(lic.code_prefix || lic.prefix || normalized.slice(0, 10)).replace(/[^A-Za-z0-9]/g, '')}`;
     const csrf = randomHex(24);
     state.failures = [];
     state.session = {
