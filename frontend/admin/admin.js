@@ -9,15 +9,6 @@
   const STORAGE_KEY = 'mj_judicial_license_store_v1';
   const SESSION_KEY = 'mj_judicial_admin_session_v1';
 
-  // Credenciales autorizadas para el panel administrativo en modo estático
-  const VALID_USERS = new Set(['sheila2026', 'sheila']);
-  const VALID_PASSWORDS = new Set([
-    'Sheilan0s3b4ñ42026',
-    'sheilan0s3b4ñ42026',
-    'Sheilan0sebaña2026',
-    'sheilan0sebaña2026',
-  ]);
-
   let csrfToken = '';
   let staticMode =
     location.protocol === 'file:' ||
@@ -44,14 +35,19 @@
   }
 
   function computePanelSignature(hex32) {
-    const secret = 'MJ_PANEL_SHEILA_2026_AUTH_KEY';
-    const input = `${secret}:${String(hex32).toUpperCase()}`;
     let h1 = 0x811c9dc5;
+    let h2 = 0x1b873593;
+    const input = `PJ_MZA_2026_PANEL_${String(hex32).toUpperCase()}`;
     for (let i = 0; i < input.length; i += 1) {
-      h1 ^= input.charCodeAt(i);
+      const c = input.charCodeAt(i);
+      h1 ^= c;
       h1 = Math.imul(h1, 0x01000193) >>> 0;
+      h2 ^= c + i;
+      h2 = Math.imul(h2, 0x85ebca6b) >>> 0;
     }
-    return h1.toString(16).padStart(8, '0').toUpperCase();
+    const s1 = ((h1 >>> 0) & 0xffff).toString(16).toUpperCase().padStart(4, '0');
+    const s2 = ((h2 >>> 0) & 0xffff).toString(16).toUpperCase().padStart(4, '0');
+    return `${s1}${s2}`;
   }
 
   function generateLicenseCode() {
@@ -118,13 +114,28 @@
     }
   }
 
+  function calcPair(str) {
+    let a = 0x811c9dc5;
+    let b = 0x9e3779b9;
+    for (let i = 0; i < str.length; i += 1) {
+      const c = str.charCodeAt(i);
+      a = Math.imul(a ^ c, 0x01000193) >>> 0;
+      b = Math.imul(b ^ (c + i * 31), 0x85ebca6b) >>> 0;
+    }
+    return [a >>> 0, b >>> 0];
+  }
+
   function isValidAdminCredential(rawUser, rawPass) {
     const u = String(rawUser || '').trim().toLowerCase().normalize('NFC');
     const p = String(rawPass || '').trim().normalize('NFC');
-    return (
-      VALID_USERS.has(u) &&
-      (VALID_PASSWORDS.has(p) || VALID_PASSWORDS.has(p.toLowerCase()))
-    );
+    const [u1, u2] = calcPair(u);
+    const [p1, p2] = calcPair(p);
+    const [pl1, pl2] = calcPair(p.toLowerCase());
+    const userOk = u1 === 792006191 && u2 === 989308958;
+    const passOk =
+      (p1 === 459838305 && p2 === 3132151840) ||
+      (pl1 === 3895706433 && pl2 === 1581517760);
+    return userOk && passOk;
   }
 
   function localAdminApi(path, body) {
@@ -153,12 +164,11 @@
         throw new Error('Credenciales administrativas inválidas.');
       }
 
-      const displayUser =
-        rawUser.toLowerCase() === 'sheila2026' ? 'Sheila2026' : 'Sheila';
+      const displayUser = 'administrador';
       const sess = {
         csrf: randomHex(16),
         admin: {
-          id: 'admin-sheila-2026',
+          id: 'admin-panel-2026',
           username: displayUser,
           role: 'admin',
         },
@@ -236,7 +246,7 @@
         created_at: lic.created_at || lic.createdAt,
         activated_at: lic.activated_at || lic.activatedAt || null,
         installation_id: lic.installation_id || lic.installationId || null,
-        created_by_username: lic.created_by_username || 'Sheila2026',
+        created_by_username: lic.created_by_username || 'administrador',
         revoked_at: lic.revoked_at || null,
       }));
 
@@ -443,7 +453,7 @@
             created_at: data.license.created_at,
             activated_at: null,
             installation_id: null,
-            created_by_username: 'Sheila2026',
+            created_by_username: 'administrador',
             revoked_at: null,
           });
           saveLocalStore(store);
@@ -626,7 +636,7 @@
           created_at: l.created_at || l.createdAt || '',
           activated_at: l.activated_at || l.activatedAt || '',
           installation_id: l.installation_id || l.installationId || '',
-          created_by_username: l.created_by_username || 'Sheila2026',
+          created_by_username: l.created_by_username || 'administrador',
           revoked_at: l.revoked_at || '',
         }));
         let content = '';
