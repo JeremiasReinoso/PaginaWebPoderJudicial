@@ -834,7 +834,7 @@ export class Server {
       const admin = requireRole(adminSess, ['admin']);
       const created = createLicense(this.store, {
         adminId: admin.id,
-        clientReference: body.client_reference || null,
+        clientReference: body.person_name || body.client_reference || null,
       });
       return this.respond(req, res, 201, { license: created });
     }
