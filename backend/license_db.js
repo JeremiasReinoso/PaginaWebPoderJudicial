@@ -98,7 +98,7 @@ export const MIGRATIONS = [
       ALTER TABLE admin_sessions RENAME COLUMN token_hash TO token;
       ALTER TABLE licenses RENAME COLUMN code_hash TO code;
       ALTER TABLE licenses RENAME COLUMN installation_credential_hash TO installation_credential;
-      DELETE FROM admin_users WHERE id = 'admin-sheila-2026'
+      DELETE FROM admin_users WHERE id = 'admin-legacy'
         AND id NOT IN (SELECT created_by FROM licenses)
         AND id NOT IN (SELECT actor_id FROM audit_logs WHERE actor_id IS NOT NULL);
     `,
