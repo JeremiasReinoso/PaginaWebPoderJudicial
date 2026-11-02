@@ -19,6 +19,12 @@ function configuredCampus() {
 }
 function resolveCampusEntryUrl() {
   const path = location.pathname;
+  if (path.includes('/frontend/public/pages/')) {
+    return new URL('../../campus/index.html', location.href).href;
+  }
+  if (path.includes('/frontend/public/')) {
+    return new URL('../campus/index.html', location.href).href;
+  }
   if (path.includes('/pages/')) {
     return new URL('../campus/index.html', location.href).href;
   }
@@ -26,6 +32,12 @@ function resolveCampusEntryUrl() {
 }
 function resolveClientBackendUrl() {
   const path = location.pathname;
+  if (path.includes('/frontend/public/pages/')) {
+    return new URL('../../campus/client_backend.js', location.href).href;
+  }
+  if (path.includes('/frontend/public/')) {
+    return new URL('../campus/client_backend.js', location.href).href;
+  }
   if (path.includes('/pages/')) {
     return new URL('../campus/client_backend.js', location.href).href;
   }
