@@ -4,6 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Administración de Licencias | Método Judicial</title>
+    <meta name="robots" content="noindex,nofollow,noarchive" />
     <link rel="stylesheet" href="./admin.css" />
     <script defer src="./admin.js"></script>
   </head>
@@ -110,13 +111,14 @@
               creación; después solo se consulta por su prefijo.</p>
             <form id="create-license-form">
               <label class="form-field" for="client-reference-input">
-                Cliente o referencia interna (opcional)
+                Nombre de la persona
                 <input
                   id="client-reference-input"
                   name="client_reference"
                   type="text"
-                  placeholder="Ej.: Expediente / Estudiante #104"
+                  placeholder="Ej.: Ana Pérez"
                   maxlength="120"
+                  required
                 />
               </label>
               <button
