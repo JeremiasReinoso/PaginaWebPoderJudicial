@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="es-AR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Ingreso por código | Método Judicial</title>
+    <link rel="stylesheet" href="./css/main.css" />
+    <script defer src="./js/config.js"></script>
+    <script defer src="./js/modules/ui.js"></script>
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="header-inner">
+        <a class="brand" href="./index.html" aria-label="Método Judicial, inicio">
+          <span class="brand-mark" aria-hidden="true">m.</span>
+          <span><strong>método judicial</strong><small>Tu espacio de estudio</small></span>
+        </a>
+      </div>
+    </header>
+    <main class="container section">
+      <div class="contact-panel" style="max-width: 560px; margin: 30px auto">
+        <span class="eyebrow">Acceso personal</span>
+        <h1 style="font-size: clamp(32px, 4vw, 43px); letter-spacing: -2px; margin: 12px 0 16px">
+          Un código.<br />Tu próximo paso.
+        </h1>
+        <p>
+          Ingresá el código de licencia que te entregó el equipo para entrar a la sección seleccionada. No necesitás usuario ni
+          contraseña adicional.
+        </p>
+        <form id="login-form">
+          <label class="form-field">
+            Código de acceso
+            <input
+              name="code"
+              type="text"
+             
+              autocomplete="off"
+              autocapitalize="characters"
+              spellcheck="false"
+              maxlength="128"
+              required
+            />
+          </label>
+          <button
+            type="submit"
+            class="button"
+            style="margin-top: 24px; width: 100%"
+          >
+            Ingresar con código
+          </button>
+          <p id="login-message" class="form-message" role="status"></p>
+        </form>
+
+        <div class="payment-alias-box" aria-label="Datos de pago para obtener licencia">
+          <span class="eyebrow">¿Todavía no pagaste tu licencia?</span>
+          <h3>Transferí al alias oficial</h3>
+          <div class="alias-badge-row">
+            <code class="alias-code">CURSOPODER.1</code>
+            <button
+              type="button"
+              class="button secondary alias-copy-btn"
+              data-copy-alias="CURSOPODER.1"
+            >
+              Copiar alias
+            </button>
+          </div>
+          <p>
+            Una vez realizado el pago al alias <strong>CURSOPODER.1</strong>, enviá el comprobante al correo
+            <a class="proton-mail-badge" href="mailto:Aprendebienymejoraula@gmail.com">Aprendebienymejoraula@gmail.com</a>
+            indicando la sección seleccionada para que te enviemos tu licencia de acceso.
+          </p>
+        </div>
+
+        <p class="small" style="margin-top: 18px">
+          Tu código es personal. Cuidalo como una contraseña y no lo compartas.
+        </p>
+        <p class="small">
+          Al activar tu código, tendrás acceso permanente al campus y a los PDFs oficiales de estudio.
+        </p>
+      </div>
+    </main>
+  </body>
+</html>
