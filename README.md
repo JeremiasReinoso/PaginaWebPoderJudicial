@@ -9,13 +9,7 @@ Este ZIP incluye el sitio web y sus documentos de estudio. El video promocional 
 
 ## Cómo abrirlo
 
-En Windows, abrí PowerShell en la carpeta `Frontend` y ejecutá:
-
-```powershell
-.\iniciar-local.ps1
-```
-
-Después visitá <http://127.0.0.1:8765/>. Para cerrar el servidor local, presioná `Ctrl+C`.
+En Windows, hacé doble clic en `Frontend/Iniciar-Metodo-Judicial.bat`. Se abre el sitio en el navegador y una ventana del servidor local. Para detenerlo, cerrá esa ventana. Requiere Python 3.
 
 ## Estado funcional
 
