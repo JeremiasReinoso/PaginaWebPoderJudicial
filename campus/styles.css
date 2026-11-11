@@ -270,6 +270,17 @@ textarea:disabled {
     padding: 12px 8px;
     font-size: 12px;
   }
+  .campus-tabs[aria-label='Herramientas de prueba'] {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .campus-tabs[aria-label='Herramientas de prueba'] button {
+    min-width: 0;
+    min-height: 44px;
+    padding: 8px 5px;
+    font-size: 11px;
+    line-height: 1.2;
+  }
   .header-inner {
     gap: 20px;
   }
